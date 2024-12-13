@@ -79,5 +79,5 @@ for target in encoded_target:
 
     # SHAP summary plot
     st.write(f"SHAP Summary Plot for {target}")
-    shap.summary_plot(shap_values, X_test, show=False) 
-    st.pyplot(fig)
+    shap.summary_plot(shap_values, X_test, show=False)
+    st.pyplot(bbox_inches="tight")

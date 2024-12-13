@@ -21,7 +21,7 @@ target_option = st.radio("Select Target Columns to Analyze", ("Spending Categori
 
 if target_option == "Spending Categories":
     target_columns = option_1
-else if target_option == "Purchase Metrics":
+elif target_option == "Purchase Metrics":
     target_columns = option_2
 else:
     target_columns = option_3

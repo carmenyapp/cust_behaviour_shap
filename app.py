@@ -79,6 +79,8 @@ for target in encoded_target:
 
     # SHAP summary plot
     st.write(f"SHAP Summary Plot for {target}")
-    plt.figure(figsize=(12, 8)) 
+    plot_width = st.slider("Select Plot Width", min_value=5, max_value=20, value=12)
+    plot_height = st.slider("Select Plot Height", min_value=5, max_value=15, value=8)
+    plt.figure(figsize=(plot_width, plot_height)) 
     shap.summary_plot(shap_values, X_test, show=False)
     st.pyplot(bbox_inches="tight")

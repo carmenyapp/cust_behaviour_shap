@@ -43,7 +43,7 @@ features = df.drop(columns=[f'{col}_binned' for col in target_columns if col not
 encoded_target = [f'{col}_encoded' for col in target_columns]
 
 shap_results = {}
-
+results_table = []
 for target in encoded_target:
     st.write(f"Training for Target: {target}")
 
@@ -59,10 +59,24 @@ for target in encoded_target:
     # Predict and calculate F1 score
     y_pred = model.predict(X_test)
     f1 = f1_score(y_test, y_pred, average='weighted')
-    report = classification_report(y_test, y_pred)
+    report = classification_report(y_test, y_pred, output_dict=True)
 
-    st.write(f"F1 Score for {target}: {f1}")
-    st.text(report)
+    results_table.append({
+        "Target": target,
+        "F1 Score": f1,
+        "Precision (Class 0)": report['0']['precision'],
+        "Recall (Class 0)": report['0']['recall'],
+        "F1 Score (Class 0)": report['0']['f1-score'],
+        "Precision (Class 1)": report['1']['precision'],
+        "Recall (Class 1)": report['1']['recall'],
+        "F1 Score (Class 1)": report['1']['f1-score'],
+        "Macro avg Precision": report['macro avg']['precision'],
+        "Macro avg Recall": report['macro avg']['recall'],
+        "Macro avg F1 Score": report['macro avg']['f1-score'],
+        "Weighted avg Precision": report['weighted avg']['precision'],
+        "Weighted avg Recall": report['weighted avg']['recall'],
+        "Weighted avg F1 Score": report['weighted avg']['f1-score']
+    })
 
     explainer = shap.Explainer(model, X_train)
     shap_values = explainer(X_test)

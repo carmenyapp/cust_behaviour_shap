@@ -94,3 +94,6 @@ for target in encoded_target:
         shap.summary_plot(shap_values.values, X_test, show=False)
 
     st.pyplot(bbox_inches="tight")
+
+results_df = pd.DataFrame(results_table)
+st.write("Model Performance Results:", results_df)

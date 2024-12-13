@@ -79,4 +79,4 @@ for target in encoded_target:
     else:
         shap.summary_plot(shap_values.values, X_test, show=False)
 
-    st.pyplot(fig, bbox_inches="tight")
+    st.pyplot(bbox_inches="tight")

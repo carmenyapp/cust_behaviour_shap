@@ -75,7 +75,7 @@ for target in encoded_target:
 
     st.write(f"SHAP Summary Plot for {target}")
     
-    fig = plt.figure(figsize=(10, 8)) 
+    fig = plt.figure(figsize=(12, 10)) 
     if isinstance(shap_values, list):
         shap.summary_plot(shap_values[0].values, X_test, show=False)
     else:

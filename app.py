@@ -7,19 +7,22 @@ from sklearn.preprocessing import LabelEncoder
 import shap
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('cluster_marketing_campaign.csv')
-
+# Define the target columns for each option
 option_1 = ['MntWines', 'MntFruits', 'MntMeatProducts', 
             'MntFishProducts', 'MntSweetProducts', 'MntGoldProds']
 
 option_2 = ['NumDealsPurchases', 'NumWebPurchases', 
             'NumCatalogPurchases', 'NumStorePurchases']
+
 option_3 = ['NumWebVisitsMonth', 'AcceptedCmp3', 'AcceptedCmp4', 
             'AcceptedCmp5', 'AcceptedCmp1', 'AcceptedCmp2', 
             'Complain', 'Response']
 
-target_option = st.radio("Select Target Columns to Analyze", ("Spending Categories", "Purchase Metrics","Response Metrics"))
+# User selection for target columns
+target_option = st.radio("Select Target Columns to Analyze", 
+                         ("Spending Categories", "Purchase Metrics", "Response Metrics"))
 
+# Assign target columns based on user selection
 if target_option == "Spending Categories":
     target_columns = option_1
 elif target_option == "Purchase Metrics":
@@ -28,12 +31,17 @@ else:
     target_columns = option_3
 
 encoder = LabelEncoder()
+
+# Binning for option_1 and option_2, but not for option_3
 for col in target_columns:
-    df[f'{col}_binned'] = pd.qcut(df[col], q=3, labels=['low', 'medium', 'high'])
-    df[f'{col}_encoded'] = encoder.fit_transform(df[[f'{col}_binned']])
+    if col not in option_3:  # Skip binning for option_3 columns
+        df[f'{col}_binned'] = pd.qcut(df[col], q=3, labels=['low', 'medium', 'high'])
+        df[f'{col}_encoded'] = encoder.fit_transform(df[[f'{col}_binned']])
+    else:
+        df[f'{col}_encoded'] = encoder.fit_transform(df[[col]])  # Encode binary columns for option_3
 
 # Feature preparation
-features = df.drop(columns=[f'{col}_binned' for col in target_columns])
+features = df.drop(columns=[f'{col}_binned' for col in target_columns if col not in option_3])  # Drop binned columns for option_3
 encoded_target = [f'{col}_encoded' for col in target_columns]
 
 shap_results = {}
@@ -69,5 +77,6 @@ for target in encoded_target:
 
     # SHAP summary plot
     st.write(f"SHAP Summary Plot for {target}")
+    plt.figure(figsize=(12, 8)) 
     shap.summary_plot(shap_values, X_test, show=False)
     st.pyplot(bbox_inches="tight")

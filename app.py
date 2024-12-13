@@ -7,7 +7,8 @@ from sklearn.preprocessing import LabelEncoder
 import shap
 import matplotlib.pyplot as plt
 
-# Define the target columns for each option
+df = pd.read_csv('cluster_marketing_campaign.csv')
+
 option_1 = ['MntWines', 'MntFruits', 'MntMeatProducts', 
             'MntFishProducts', 'MntSweetProducts', 'MntGoldProds']
 
@@ -18,11 +19,9 @@ option_3 = ['NumWebVisitsMonth', 'AcceptedCmp3', 'AcceptedCmp4',
             'AcceptedCmp5', 'AcceptedCmp1', 'AcceptedCmp2', 
             'Complain', 'Response']
 
-# User selection for target columns
 target_option = st.radio("Select Target Columns to Analyze", 
                          ("Spending Categories", "Purchase Metrics", "Response Metrics"))
 
-# Assign target columns based on user selection
 if target_option == "Spending Categories":
     target_columns = option_1
 elif target_option == "Purchase Metrics":
@@ -40,13 +39,11 @@ for col in target_columns:
     else:
         df[f'{col}_encoded'] = encoder.fit_transform(df[[col]])  # Encode binary columns for option_3
 
-# Feature preparation
 features = df.drop(columns=[f'{col}_binned' for col in target_columns if col not in option_3])  # Drop binned columns for option_3
 encoded_target = [f'{col}_encoded' for col in target_columns]
 
 shap_results = {}
 
-# Analysis loop
 for target in encoded_target:
     st.write(f"Training for Target: {target}")
 
@@ -67,7 +64,6 @@ for target in encoded_target:
     st.write(f"F1 Score for {target}: {f1}")
     st.text(report)
 
-    # SHAP values and plot
     explainer = shap.Explainer(model, X_train)
     shap_values = explainer(X_test)
 
@@ -77,7 +73,6 @@ for target in encoded_target:
         'report': report
     }
 
-    # Access the SHAP values and plot
     st.write(f"SHAP Summary Plot for {target}")
     
     # If shap_values are a list, extract the values (class-specific SHAP values)

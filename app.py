@@ -64,12 +64,6 @@ for target in encoded_target:
     results_table.append({
         "Target": target,
         "F1 Score": f1,
-        "Precision (Class 0)": report['0']['precision'],
-        "Recall (Class 0)": report['0']['recall'],
-        "F1 Score (Class 0)": report['0']['f1-score'],
-        "Precision (Class 1)": report['1']['precision'],
-        "Recall (Class 1)": report['1']['recall'],
-        "F1 Score (Class 1)": report['1']['f1-score'],
         "Macro avg Precision": report['macro avg']['precision'],
         "Macro avg Recall": report['macro avg']['recall'],
         "Macro avg F1 Score": report['macro avg']['f1-score'],

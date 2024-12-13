@@ -1,13 +1,11 @@
 import streamlit as st
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, classification_report
 from sklearn.preprocessing import LabelEncoder
 import shap
 import matplotlib.pyplot as plt
-
-df = pd.read_csv('cluster_marketing_campaign.csv')
 
 # Define the target columns for each option
 option_1 = ['MntWines', 'MntFruits', 'MntMeatProducts', 
@@ -53,13 +51,15 @@ for target in encoded_target:
     st.write(f"Training for Target: {target}")
 
     # Train-Test Split for each target
-    X = features
-    y = df[target]
+    X = features  
+    y = df[target]  
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-    model = RandomForestClassifier(random_state=42)
+    # Initialize Logistic Regression model
+    model = LogisticRegression(random_state=42, max_iter=500)
     model.fit(X_train, y_train)
 
+    # Predict and calculate F1 score
     y_pred = model.predict(X_test)
     f1 = f1_score(y_test, y_pred, average='weighted')
     report = classification_report(y_test, y_pred)
@@ -68,8 +68,8 @@ for target in encoded_target:
     st.text(report)
 
     # SHAP values and plot
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_test)
+    explainer = shap.Explainer(model, X_train)
+    shap_values = explainer(X_test)
 
     shap_results[target] = {
         'shap_values': shap_values,
@@ -77,7 +77,13 @@ for target in encoded_target:
         'report': report
     }
 
-    # SHAP summary plot
+    # Access the SHAP values and plot
     st.write(f"SHAP Summary Plot for {target}")
-    shap.summary_plot(shap_values, X_test, show=False)
+    
+    # If shap_values are a list, extract the values (class-specific SHAP values)
+    if isinstance(shap_values, list):
+        shap.summary_plot(shap_values[0].values, X_test, show=False)
+    else:
+        shap.summary_plot(shap_values.values, X_test, show=False)
+    
     st.pyplot(bbox_inches="tight")

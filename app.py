@@ -48,6 +48,8 @@ encoded_target = [f'{col}_encoded' for col in target_columns]
 
 shap_results = {}
 
+plot_width = st.slider("Select Plot Width", min_value=5, max_value=20, value=12)
+plot_height = st.slider("Select Plot Height", min_value=5, max_value=15, value=8)
 # Analysis loop
 for target in encoded_target:
     st.write(f"Training for Target: {target}")
@@ -79,6 +81,6 @@ for target in encoded_target:
 
     # SHAP summary plot
     st.write(f"SHAP Summary Plot for {target}")
-    plt.figure(figsize=(10, 6)) 
-    shap.summary_plot(shap_values, X_test, show=False)
-    st.pyplot(bbox_inches="tight")
+    fig, ax = plt.subplots(figsize=(plot_width, plot_height))  # Define the figure size
+    shap.summary_plot(shap_values, X_test, show=False, ax=ax)  # Pass the ax parameter to ensure correct size
+    st.pyplot(fig)

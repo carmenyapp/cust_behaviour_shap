@@ -7,7 +7,8 @@ from sklearn.preprocessing import LabelEncoder
 import shap
 import matplotlib.pyplot as plt
 
-# Define target columns for option 1 and option 2
+df = pd.read_csv('cluster_marketing_campaign.csv')
+
 option_1 = ['MntWines', 'MntFruits', 'MntMeatProducts', 
             'MntFishProducts', 'MntSweetProducts', 'MntGoldProds']
 

@@ -75,10 +75,10 @@ for target in encoded_target:
 
     st.write(f"SHAP Summary Plot for {target}")
     
-    # If shap_values are a list, extract the values (class-specific SHAP values)
+    fig = plt.figure(figsize=(10, 8)) 
     if isinstance(shap_values, list):
         shap.summary_plot(shap_values[0].values, X_test, show=False)
     else:
         shap.summary_plot(shap_values.values, X_test, show=False)
-    
-    st.pyplot(bbox_inches="tight")
+
+    st.pyplot(fig, bbox_inches="tight")

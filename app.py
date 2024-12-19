@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 # Streamlit UI Configuration
 st.set_page_config(layout="wide")
-st.title("Cluster-wise Binary Classification and SHAP Analysis")
+st.title("Cluster-wise Analysis")
 
 @st.cache_data
 def load_data():

@@ -44,12 +44,16 @@ if st.button("Analyze Cluster"):
 
     # SHAP analysis
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_test)
+    X_test_dense = X_test.values if isinstance(X_test, pd.DataFrame) else X_test
+    shap_values = explainer.shap_values(X_test_dense)
 
     # SHAP summary plot (Beeswarm)
     st.subheader(f"SHAP Impact on Model Output - Cluster {selected_cluster}")
     fig, ax = plt.subplots(figsize=(14, 8))
-    shap.summary_plot(shap_values[1], X_test, show=False)
+    if isinstance(shap_values, list):
+        shap.summary_plot(shap_values[1], X_test, show=False)
+    else:
+        shap.summary_plot(shap_values, X_test, show=False)
     st.pyplot(fig)
 
     # Feature importance plot

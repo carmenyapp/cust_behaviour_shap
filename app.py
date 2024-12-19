@@ -44,7 +44,7 @@ if st.button("Analyze Cluster"):
 
     # SHAP analysis
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_test.values)
+    shap_values = explainer.shap_values(X_test)
 
     # SHAP summary plot (Beeswarm)
     st.subheader(f"SHAP Impact on Model Output - Cluster {selected_cluster}")

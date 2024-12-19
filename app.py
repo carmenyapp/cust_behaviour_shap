@@ -25,45 +25,54 @@ if st.button("Analyze Cluster"):
     # Binary target for the selected cluster
     st.write(f"Analyzing Cluster {selected_cluster}")
     df['binary_target'] = (df['Cluster'] == selected_cluster).astype(int)
-
+    
     # Features and target
     X = df.drop(columns=['Cluster', 'binary_target'])
     y = df['binary_target']
-
+    
     # Train-test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
+    
     # Train model
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
-
+    
     # Predictions and classification report
     y_pred = model.predict(X_test)
     st.write("Classification Report:")
     st.text(classification_report(y_test, y_pred))
-
+    
     # SHAP analysis
     explainer = shap.TreeExplainer(model)
-    X_test_dense = X_test.values if isinstance(X_test, pd.DataFrame) else X_test
-    shap_values = explainer.shap_values(X_test_dense)
-
+    shap_values = explainer.shap_values(X_test)
+    
+    # Clear any existing matplotlib plots
+    plt.clf()
+    
     # SHAP summary plot (Beeswarm)
     st.subheader(f"SHAP Impact on Model Output - Cluster {selected_cluster}")
-    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    # Create figure with specific size
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Plot SHAP values
     if isinstance(shap_values, list):
         shap.summary_plot(shap_values[1], X_test, show=False)
     else:
         shap.summary_plot(shap_values, X_test, show=False)
-    st.pyplot(fig)
-
+    
+    # Display the plot
+    st.pyplot(plt.gcf())
+    plt.clf()  # Clear the figure
+    
     # Feature importance plot
     st.subheader(f"Feature Importance - Cluster {selected_cluster}")
     feature_importance = pd.DataFrame({
         'feature': X.columns,
         'importance': model.feature_importances_
     }).sort_values('importance', ascending=True)
-
-    fig, ax = plt.subplots(figsize=(14, 8))
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
     ax.barh(feature_importance['feature'], feature_importance['importance'])
     ax.set_title(f'Random Forest Feature Importance - Cluster {selected_cluster}')
     ax.set_xlabel('Feature Importance')

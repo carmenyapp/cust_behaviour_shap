@@ -19,10 +19,9 @@ df = load_data()
 
 # Sidebar: Cluster selection
 clusters = df['Cluster'].unique()
-selected_cluster = st.sidebar.selectbox("Select a Cluster for Analysis", clusters)
+selected_cluster = st.selectbox("Select a Cluster for Analysis", clusters)
 
-# Analyze button
-if st.sidebar.button("Analyze Cluster"):
+if st.button("Analyze Cluster"):
     # Binary target for the selected cluster
     st.write(f"Analyzing Cluster {selected_cluster}")
     df['binary_target'] = (df['Cluster'] == selected_cluster).astype(int)
@@ -45,7 +44,7 @@ if st.sidebar.button("Analyze Cluster"):
 
     # SHAP analysis
     explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_test)
+    shap_values = explainer.shap_values(X_test.values)
 
     # SHAP summary plot (Beeswarm)
     st.subheader(f"SHAP Impact on Model Output - Cluster {selected_cluster}")

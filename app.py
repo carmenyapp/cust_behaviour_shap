@@ -1,93 +1,66 @@
 import streamlit as st
 import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import f1_score, classification_report
-from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import classification_report
 import shap
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('cluster_marketing_campaign.csv')
+# Streamlit UI Configuration
+st.set_page_config(layout="wide")
+st.title("Cluster-wise Binary Classification and SHAP Analysis")
 
-option_1 = ['MntWines', 'MntFruits', 'MntMeatProducts', 
-            'MntFishProducts', 'MntSweetProducts', 'MntGoldProds']
+df = pd.read_csv("cluster_marketing_campaign.csv")
 
-option_2 = ['NumDealsPurchases', 'NumWebPurchases', 
-            'NumCatalogPurchases', 'NumStorePurchases']
+# Dropdown for Cluster Selection
+clusters = df['Cluster'].unique()
+selected_cluster = st.sidebar.selectbox("Select a Cluster for Analysis", clusters)
 
-option_3 = ['NumWebVisitsMonth', 'AcceptedCmp3', 'AcceptedCmp4', 
-            'AcceptedCmp5', 'AcceptedCmp1', 'AcceptedCmp2', 
-            'Complain', 'Response']
+# Analyze Button
+if st.sidebar.button("Analyze Cluster"):
+    # Binary target for the selected cluster
+    st.write(f"Analyzing Cluster {selected_cluster}")
+    df[f'binary_target'] = (df['Cluster'] == selected_cluster).astype(int)
 
-target_option = st.radio("Select Target Columns to Analyze", 
-                         ("Spending Categories", "Purchase Metrics", "Response Metrics"))
+    # Features and Target
+    X = df.drop(columns=['Cluster', 'binary_target'])
+    y = df['binary_target']
 
-if target_option == "Spending Categories":
-    target_columns = option_1
-elif target_option == "Purchase Metrics":
-    target_columns = option_2
-else:
-    target_columns = option_3
-
-encoder = LabelEncoder()
-
-# Binning for option_1 and option_2, but not for option_3
-for col in target_columns:
-    if col not in option_3:  # Skip binning for option_3 columns
-        df[f'{col}_binned'] = pd.qcut(df[col], q=3, labels=['low', 'medium', 'high'])
-        df[f'{col}_encoded'] = encoder.fit_transform(df[[f'{col}_binned']])
-    else:
-        df[f'{col}_encoded'] = encoder.fit_transform(df[[col]])  # Encode binary columns for option_3
-
-features = df.drop(columns=[f'{col}_binned' for col in target_columns if col not in option_3])  # Drop binned columns for option_3
-encoded_target = [f'{col}_encoded' for col in target_columns]
-
-shap_results = {}
-results_table = []
-for target in encoded_target:
-    st.write(f"Training for Target: {target}")
-
-    # Train-Test Split for each target
-    X = features  
-    y = df[target]  
+    # Train-Test Split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-    # Initialize Logistic Regression model
-    model = LogisticRegression(random_state=42, max_iter=500)
+    # Train Model
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
 
-    # Predict and calculate F1 score
+    # Predictions and Classification Report
     y_pred = model.predict(X_test)
-    f1 = f1_score(y_test, y_pred, average='weighted')
-    report = classification_report(y_test, y_pred, output_dict=True)
+    st.write("Classification Report:")
+    st.text(classification_report(y_test, y_pred))
 
-    results_table.append({
-        "Target": target,
-        "F1 Score": f1,
-        "Macro avg Precision": report['macro avg']['precision'],
-        "Macro avg Recall": report['macro avg']['recall'],
-        "Macro avg F1 Score": report['macro avg']['f1-score'],
-        "Weighted avg Precision": report['weighted avg']['precision'],
-        "Weighted avg Recall": report['weighted avg']['recall'],
-        "Weighted avg F1 Score": report['weighted avg']['f1-score']
-    })
+    # SHAP Analysis
+    explainer = shap.TreeExplainer(model)
+    X_test_dense = X_test.values if isinstance(X_test, pd.DataFrame) else X_test
+    shap_values = explainer.shap_values(X_test_dense)
 
-    explainer = shap.Explainer(model, X_train)
-    shap_values = explainer(X_test)
-
-    shap_results[target] = {
-        'shap_values': shap_values,
-        'f1_score': f1,
-        'report': report
-    }
-
-    st.write(f"SHAP Summary Plot for {target}")
+    # SHAP Summary Plot (Beeswarm)
+    st.subheader(f"SHAP Impact on Model Output - Cluster {selected_cluster}")
+    fig, ax = plt.subplots(figsize=(14, 8))
     if isinstance(shap_values, list):
-        shap.summary_plot(shap_values[0].values, X_test, show=False)
+        shap.summary_plot(shap_values[1], X_test, show=False)
     else:
-        shap.summary_plot(shap_values.values, X_test, show=False)
+        shap.summary_plot(shap_values, X_test, show=False)
+    st.pyplot(fig)
 
-    st.pyplot(bbox_inches="tight")
+    # Feature Importance Plot
+    st.subheader(f"Feature Importance - Cluster {selected_cluster}")
+    feature_importance = pd.DataFrame({
+        'feature': X.columns,
+        'importance': model.feature_importances_
+    }).sort_values('importance', ascending=True)
 
-results_df = pd.DataFrame(results_table)
-st.write("Model Performance Results:", results_df)
+    fig, ax = plt.subplots(figsize=(14, 8))
+    ax.barh(feature_importance['feature'], feature_importance['importance'])
+    ax.set_title(f'Random Forest Feature Importance - Cluster {selected_cluster}')
+    ax.set_xlabel('Feature Importance')
+    st.pyplot(fig)

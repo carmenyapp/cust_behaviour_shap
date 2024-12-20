@@ -39,8 +39,11 @@ if st.button("Analyze Cluster"):
     
     # Predictions and classification report
     y_pred = model.predict(X_test)
+
+    report = classification_report(y_test, y_pred, output_dict=True)
+    report_df = pd.DataFrame(report).transpose()
     st.write("Classification Report:")
-    st.text(classification_report(y_test, y_pred))
+    st.table(report_df)
     
     # SHAP analysis
     explainer = shap.TreeExplainer(model)
@@ -62,7 +65,8 @@ if st.button("Analyze Cluster"):
         shap.summary_plot(shap_values, X_test, show=False)
     
     # Display the plot
-    st.pyplot(plt.gcf())
+    plt.gcf().set_size_inches(10, 6)
+    st.pyplot(plt.gcf(), bbox_inches='tight')  
     plt.clf()  # Clear the figure
     
     # Feature importance plot

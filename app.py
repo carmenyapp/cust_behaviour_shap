@@ -66,6 +66,7 @@ if st.button("Analyze Cluster"):
     
     # Display the plot
     plt.gcf().set_size_inches(10, 6)
+    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
     st.pyplot(plt.gcf(), bbox_inches='tight')  
     plt.clf()  # Clear the figure
     

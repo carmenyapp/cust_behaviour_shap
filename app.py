@@ -118,3 +118,20 @@ if st.button("Analyze Cluster"):
     )
     st.pyplot(fig)
     plt.close()
+
+    top_feature_idx = np.argmax(mean_shap)
+    top_feature_name = list(X.columns)[top_feature_idx]
+    
+    st.subheader(f"SHAP Dependence Plot - {top_feature_name}")
+    fig_dep, ax_dep = plt.subplots(figsize=(12, 8))
+    shap.dependence_plot(
+        top_feature_idx,
+        shap_values[1],
+        X_test,
+        feature_names=list(X.columns),
+        show=False,
+        ax=ax_dep
+    )
+    st.pyplot(fig_dep)
+    plt.close()
+

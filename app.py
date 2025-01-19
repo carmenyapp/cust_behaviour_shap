@@ -42,7 +42,6 @@ def load_data():
     df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
     return df, categorical_cols
     
-@st.cache_data
 def apply_kprototypes(df, categorical_cols, n_clusters):
     # K-Prototypes clustering
     kproto = KPrototypes(n_clusters=n_clusters, init='Huang', random_state=42)

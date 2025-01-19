@@ -16,8 +16,7 @@ st.title("Customer Segmentation and Cluster Analysis")
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("marketing_campaign.csv")
-    st.write(df.head(1))
+    df = pd.read_csv("marketing_campaign.csv", sep='\t')
     # Preprocess dataset
     df['Income'] = df['Income'].fillna(-1.0)
     df['Dt_Customer'] = pd.to_datetime(df['Dt_Customer'], errors='coerce')

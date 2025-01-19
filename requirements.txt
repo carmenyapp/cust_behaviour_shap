@@ -4,3 +4,4 @@ matplotlib==3.8.0
 pandas==2.2.2
 numpy == 1.26.4
 streamlit==1.40.2
+kmodes==0.12.2

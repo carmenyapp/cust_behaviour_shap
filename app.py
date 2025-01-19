@@ -126,7 +126,7 @@ if st.button("Analyze Cluster"):
         X_test,
         feature_names=list(X.columns),
         max_display=25,
-        show=False,
+        show=False
     )
     st.pyplot(plt.gcf())
     plt.close()

@@ -56,21 +56,21 @@ df, categorical_cols = load_data()
 n_clusters = st.slider("Select Number of Cluster for Segmentation", min_value=2, max_value=6, value=3, step=1)
 df = apply_kprototypes(df, categorical_cols, n_clusters)
 
-X = df.drop('Cluster', axis=1)
-y = df['Cluster']
+# X = df.drop('Cluster', axis=1)
+# y = df['Cluster']
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Train a classifier
-clf = RandomForestClassifier(random_state=42)
-clf.fit(X_train, y_train)
+# # Train a classifier
+# clf = RandomForestClassifier(random_state=42)
+# clf.fit(X_train, y_train)
 
-# Predict on the test set
-y_pred = clf.predict(X_test)
+# # Predict on the test set
+# y_pred = clf.predict(X_test)
 
-# Evaluate the F1 score
-f1 = f1_score(y_test, y_pred, average='weighted')
-st.write(f"F1 Score: {f1:.4f}")
+# # Evaluate the F1 score
+# f1 = f1_score(y_test, y_pred, average='weighted')
+# st.write(f"F1 Score: {f1:.4f}")
 
 clusters = sorted(df['Cluster'].unique())
 selected_cluster = st.selectbox("Select a Cluster for Analysis", clusters)
@@ -80,24 +80,24 @@ if st.button("Analyze Cluster"):
     st.write(f"Analyzing Cluster {selected_cluster}")
     df['binary_target'] = (df['Cluster'] == selected_cluster).astype(int)
     
-    # Features and target
-    X = df.drop(columns=['Cluster', 'binary_target'])
-    y = df['binary_target']
+    # # Features and target
+    # X = df.drop(columns=['Cluster', 'binary_target'])
+    # y = df['binary_target']
     
-    # Train-test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    # # Train-test split
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
     
-    # Train model
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
+    # # Train model
+    # model = RandomForestClassifier(n_estimators=100, random_state=42)
+    # model.fit(X_train, y_train)
     
-    # Predictions and classification report
-    y_pred = model.predict(X_test)
+    # # Predictions and classification report
+    # y_pred = model.predict(X_test)
 
-    report = classification_report(y_test, y_pred, output_dict=True)
-    report_df = pd.DataFrame(report).transpose()
-    st.write("Classification Report:")
-    st.table(report_df)
+    # report = classification_report(y_test, y_pred, output_dict=True)
+    # report_df = pd.DataFrame(report).transpose()
+    # st.write("Classification Report:")
+    # st.table(report_df)
     
     # SHAP analysis
     explainer = shap.TreeExplainer(model, model_output='raw')
@@ -117,7 +117,6 @@ if st.button("Analyze Cluster"):
     ax.set_xlabel('mean(|SHAP value|)')
     ax.set_title(f'Feature Importance - Cluster {selected_cluster}')
     st.pyplot(fig)
-    plt.close()
 
     # 2. SHAP Summary Plot
     st.subheader(f"SHAP Summary Plot - Cluster {selected_cluster}")

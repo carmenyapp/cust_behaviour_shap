@@ -18,6 +18,7 @@ st.title("Customer Segmentation and Cluster Analysis")
 def load_data():
     df = pd.read_csv("marketing_campaign.csv", sep='\t')
     # Preprocess dataset
+    df = df.drop(['ID','Year_Birth','Z_CostContact', 'Z_Revenue'], axis=1)
     df['Income'] = df['Income'].fillna(-1.0)
     df['Dt_Customer'] = pd.to_datetime(df['Dt_Customer'], errors='coerce')
     df['Customer_Tenure'] = df['Dt_Customer'].apply(

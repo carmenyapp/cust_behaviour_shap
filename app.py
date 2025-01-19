@@ -50,8 +50,8 @@ if st.button("Analyze Cluster"):
     shap_values = explainer.shap_values(X_test)
     
     # 1. Feature Importance Bar Plot
-    st.subheader(f"Feature Importance - Cluster {cluster_num}")
-    mean_shap = np.abs(shap_values[1]).mean(axis=0)  # For binary classification, shap_values[1] corresponds to positive class
+    st.subheader(f"Feature Importance - Cluster {selected_cluster}")
+    mean_shap = np.abs(shap_values[1]).mean(axis=0)  
     feature_importance = pd.DataFrame(mean_shap, index=list(X.columns), columns=['SHAP Value'])
     feature_importance = feature_importance.sort_values('SHAP Value', ascending=True)
 
@@ -61,7 +61,7 @@ if st.button("Analyze Cluster"):
     ax.set_yticks(range(len(feature_importance)))
     ax.set_yticklabels(feature_importance.index)
     ax.set_xlabel('mean(|SHAP value|)')
-    ax.set_title(f'Feature Importance Plot - Cluster {cluster_num}')
+    ax.set_title(f'Feature Importance Plot - Cluster {selected_cluster}')
     st.pyplot(fig)
 
     # 2. SHAP Summary Plot

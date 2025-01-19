@@ -52,7 +52,7 @@ def apply_kprototypes(df, categorical_cols, n_clusters):
     
 # Load dataset
 df, categorical_cols = load_data()
-
+st.write(df.head())
 n_clusters = st.slider("Select Number of Cluster for Segmentation", min_value=2, max_value=6, value=3, step=1)
 df = apply_kprototypes(df, categorical_cols, n_clusters)
 

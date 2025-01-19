@@ -53,7 +53,6 @@ def apply_kprototypes(df, categorical_cols, n_clusters):
     
 # Load dataset
 df, categorical_cols = load_data()
-st.write(df.head())
 n_clusters = st.slider("Select Number of Cluster for Segmentation", min_value=2, max_value=6, value=3, step=1)
 df = apply_kprototypes(df, categorical_cols, n_clusters)
 
@@ -107,32 +106,31 @@ if st.button("Analyze Cluster"):
     
     # 1. Feature Importance Bar Plot
     st.subheader(f"Feature Importance - Cluster {selected_cluster}")
-    mean_shap = np.abs(shap_values[1]).mean(axis=0)  
+    mean_shap = np.abs(shap_values[:, :, 1]).mean(axis=0)  
     feature_importance = pd.DataFrame(mean_shap, index=list(X.columns), columns=['SHAP Value'])
     feature_importance = feature_importance.sort_values('SHAP Value', ascending=True)
 
     # Bar plot for feature importance
-    plt.figure(figsize=(12, 8))
-    plt.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
-    plt.yticks(range(len(feature_importance)), feature_importance.index)
-    plt.xlabel('mean(|SHAP value|)')
-    plt.title(f'Feature Importance Plot - Cluster {selected_cluster}')
-    plt.tight_layout()
-    st.pyplot(plt)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
+    ax.set_yticks(range(len(feature_importance)))
+    ax.set_yticklabels(feature_importance.index)
+    ax.set_xlabel('mean(|SHAP value|)')
+    ax.set_title(f'Feature Importance - Cluster {selected_cluster}')
+    st.pyplot(fig)
     plt.close()
 
     # 2. SHAP Summary Plot
     st.subheader("SHAP Summary Plot - Cluster {selected_cluster}")
-    fig, ax = plt.subplots(figsize=(12, 8))
+    plt.figure(figsize=(12, 8))
     shap.summary_plot(
-        shap_values[1],
+        shap_values[:, :, 1],
         X_test,
         feature_names=list(X.columns),
         max_display=25,
         show=False,
-        plot_size=(12, 8)
     )
-    st.pyplot(fig)
+    st.pyplot(plt.gcf())
     plt.close()
 
     top_feature_idx = np.argmax(mean_shap)

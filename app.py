@@ -12,7 +12,7 @@ st.title("Cluster-wise Analysis")
 
 @st.cache_data
 def load_data():
-    return pd.read_csv("cluster_marketing_campaign (1).csv")
+    return pd.read_csv("cluster_marketing_campaign.csv")
 
 # Load dataset
 df = load_data()

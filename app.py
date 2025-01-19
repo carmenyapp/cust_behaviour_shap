@@ -2,25 +2,65 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.metrics import classification_report
+from kmodes.kprototypes import KPrototypes
 import shap
 import matplotlib.pyplot as plt
 import numpy as np
+from datetime import datetime
 
 # Streamlit UI Configuration
 st.set_page_config(layout="wide")
-st.title("Cluster-wise Analysis")
+st.title("Customer Segmentation and Cluster Analysis")
 
 @st.cache_data
 def load_data():
-    return pd.read_csv("cluster_marketing_campaign (1).csv")
-
+    df = pd.read_csv("marketing_campaign.csv")
+    
+    # Preprocess dataset
+    df['Income'] = df['Income'].fillna(-1.0)
+    df['Dt_Customer'] = pd.to_datetime(df['Dt_Customer'], errors='coerce')
+    df['Customer_Tenure'] = df['Dt_Customer'].apply(
+        lambda x: (datetime.now() - x).days if pd.notnull(x) else -1
+    )
+    df = df.drop(['Dt_Customer'], axis=1)
+    
+    # Label encoding categorical columns
+    categorical_cols = ['Education', 'Marital_Status',
+                        'AcceptedCmp3', 'AcceptedCmp4', 'AcceptedCmp5', 
+                        'AcceptedCmp1', 'AcceptedCmp2', 'Complain', 'Response']
+    for col in categorical_cols:
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col])
+    
+    # Standard scaling for numeric columns
+    numeric_cols = ['Income', 'Recency', 'NumWebPurchases', 'NumStorePurchases',
+                    'NumCatalogPurchases', 'NumDealsPurchases', 'MntWines',
+                    'MntFruits', 'MntMeatProducts', 'MntFishProducts',
+                    'MntSweetProducts', 'MntGoldProds', 'Customer_Tenure']
+    scaler = StandardScaler()
+    df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+    return df, categorical_cols
+    
+@st.cache_data
+def apply_kprototypes(df, categorical_cols, n_clusters):
+    # K-Prototypes clustering
+    kproto = KPrototypes(n_clusters=n_clusters, init='Huang', random_state=42)
+    categorical_indices = [df.columns.get_loc(col) for col in categorical_cols]
+    clusters = kproto.fit_predict(df, categorical=categorical_indices)
+    df['Cluster'] = clusters
+    return df
+    
 # Load dataset
-df = load_data()
+df, categorical_cols = load_data()
 
-# Sidebar: Cluster selection
-clusters = df['Cluster'].unique()
+n_clusters = st.slider("Select Number of Cluster for Segmentation", min_value=2, max_value=6, value=3, step=1)
+df = apply_kprototypes(df, categorical_cols, n_clusters)
+
+clusters = sorted(df['Cluster'].unique())
 selected_cluster = st.selectbox("Select a Cluster for Analysis", clusters)
+df = apply_kprototypes(df, categorical_cols, n_clusters)
 
 if st.button("Analyze Cluster"):
     # Binary target for the selected cluster

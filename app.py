@@ -57,16 +57,18 @@ if st.button("Analyze Cluster"):
     feature_importance = feature_importance.sort_values('SHAP Value', ascending=True)
 
     # Bar plot for feature importance
-    fig, ax = plt.subplots(figsize=(12, 8))
-    ax.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
-    ax.set_yticks(range(len(feature_importance)))
-    ax.set_yticklabels(feature_importance.index)
-    ax.set_xlabel('mean(|SHAP value|)')
-    ax.set_title(f'Feature Importance Plot - Cluster {selected_cluster}')
-    st.pyplot(fig)
+    plt.figure(figsize=(12, 8))
+    plt.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
+    plt.yticks(range(len(feature_importance)), feature_importance.index)
+    plt.xlabel('mean(|SHAP value|)')
+    plt.title(f'Feature Importance Plot - Cluster {cluster_num}')
+    plt.tight_layout()
+    st.pyplot(plt)
+    plt.close()
 
     # 2. SHAP Summary Plot
-    st.subheader("SHAP Summary Plot")
+    st.subheader("SHAP Summary Plot - Cluster {cluster_num}")
+    fig_summary = plt.figure(figsize=(12, 8))
     shap.summary_plot(
         shap_values[:, :, 1],
         X_test,
@@ -74,4 +76,5 @@ if st.button("Analyze Cluster"):
         max_display=25,
         show=False
     )
-    st.pyplot(plt.gcf())
+    st.pyplot(fig_summary)
+    plt.close()

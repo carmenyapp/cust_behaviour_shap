@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, f1_score
 from kmodes.kprototypes import KPrototypes
 import shap
 import matplotlib.pyplot as plt

@@ -107,13 +107,14 @@ if st.button("Analyze Cluster"):
 
     # 2. SHAP Summary Plot
     st.subheader("SHAP Summary Plot - Cluster {selected_cluster}")
-    fig_summary = plt.figure(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(12, 8))
     shap.summary_plot(
         shap_values[1],
         X_test,
         feature_names=list(X.columns),
         max_display=25,
-        show=False
+        show=False,
+        plot_size=(12, 8)
     )
-    st.pyplot(fig_summary)
+    st.pyplot(fig)
     plt.close()

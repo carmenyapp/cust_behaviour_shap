@@ -80,24 +80,24 @@ if st.button("Analyze Cluster"):
     st.write(f"Analyzing Cluster {selected_cluster}")
     df['binary_target'] = (df['Cluster'] == selected_cluster).astype(int)
     
-    # # Features and target
-    # X = df.drop(columns=['Cluster', 'binary_target'])
-    # y = df['binary_target']
+    # Features and target
+    X = df.drop(columns=['Cluster', 'binary_target'])
+    y = df['binary_target']
     
-    # # Train-test split
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    # Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
     
-    # # Train model
-    # model = RandomForestClassifier(n_estimators=100, random_state=42)
-    # model.fit(X_train, y_train)
+    # Train model
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
     
-    # # Predictions and classification report
-    # y_pred = model.predict(X_test)
+    # Predictions and classification report
+    y_pred = model.predict(X_test)
 
-    # report = classification_report(y_test, y_pred, output_dict=True)
-    # report_df = pd.DataFrame(report).transpose()
-    # st.write("Classification Report:")
-    # st.table(report_df)
+    report = classification_report(y_test, y_pred, output_dict=True)
+    report_df = pd.DataFrame(report).transpose()
+    st.write("Classification Report:")
+    st.table(report_df)
     
     # SHAP analysis
     explainer = shap.TreeExplainer(model, model_output='raw')

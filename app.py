@@ -74,7 +74,6 @@ st.write(f"F1 Score: {f1:.4f}")
 
 clusters = sorted(df['Cluster'].unique())
 selected_cluster = st.selectbox("Select a Cluster for Analysis", clusters)
-df = apply_kprototypes(df, categorical_cols, n_clusters)
 
 if st.button("Analyze Cluster"):
     # Binary target for the selected cluster

@@ -49,36 +49,28 @@ if st.button("Analyze Cluster"):
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(X_test)
     
-    # Clear any existing matplotlib plots
-    plt.clf()
-    
-    # SHAP summary plot (Beeswarm)
-    st.subheader(f"SHAP Impact on Model Output - Cluster {selected_cluster}")
-    
-    # Create figure with specific size
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    # Plot SHAP values
-    if isinstance(shap_values, list):
-        shap.summary_plot(shap_values[1], X_test, show=False)
-    else:
-        shap.summary_plot(shap_values, X_test, show=False)
-    
-    # Display the plot
-    plt.gcf().set_size_inches(10, 6)
-    plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
-    st.pyplot(plt.gcf(), bbox_inches='tight')  
-    plt.clf()  # Clear the figure
-    
-    # Feature importance plot
-    st.subheader(f"Feature Importance - Cluster {selected_cluster}")
-    feature_importance = pd.DataFrame({
-        'feature': X.columns,
-        'importance': model.feature_importances_
-    }).sort_values('importance', ascending=True)
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.barh(feature_importance['feature'], feature_importance['importance'])
-    ax.set_title(f'Random Forest Feature Importance - Cluster {selected_cluster}')
-    ax.set_xlabel('Feature Importance')
+    # 1. Feature Importance Bar Plot
+    st.subheader(f"Feature Importance - Cluster {cluster_num}")
+    mean_shap = np.abs(shap_values[1]).mean(axis=0)  # For binary classification, shap_values[1] corresponds to positive class
+    feature_importance = pd.DataFrame(mean_shap, index=list(X.columns), columns=['SHAP Value'])
+    feature_importance = feature_importance.sort_values('SHAP Value', ascending=True)
+
+    # Bar plot for feature importance
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
+    ax.set_yticks(range(len(feature_importance)))
+    ax.set_yticklabels(feature_importance.index)
+    ax.set_xlabel('mean(|SHAP value|)')
+    ax.set_title(f'Feature Importance Plot - Cluster {cluster_num}')
     st.pyplot(fig)
+
+    # 2. SHAP Summary Plot
+    st.subheader("SHAP Summary Plot")
+    shap.summary_plot(
+        shap_values[1],
+        X_test,
+        feature_names=list(X.columns),
+        max_display=25,
+        show=False
+    )
+    st.pyplot(plt.gcf())

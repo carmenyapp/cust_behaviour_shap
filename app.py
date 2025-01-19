@@ -71,7 +71,7 @@ y_pred = clf.predict(X_test)
 
 # Evaluate the F1 score
 f1 = f1_score(y_test, y_pred, average='weighted')
-st.write(f"F1 Score: {f1}")
+st.write(f"F1 Score: {f1:.4f}")
 
 clusters = sorted(df['Cluster'].unique())
 selected_cluster = st.selectbox("Select a Cluster for Analysis", clusters)

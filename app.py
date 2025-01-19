@@ -91,7 +91,7 @@ if st.button("Analyze Cluster"):
     
     # 1. Feature Importance Bar Plot
     st.subheader(f"Feature Importance - Cluster {selected_cluster}")
-    mean_shap = np.abs(shap_values[:, :, 1]).mean(axis=0)  
+    mean_shap = np.abs(shap_values[1]).mean(axis=0)  
     feature_importance = pd.DataFrame(mean_shap, index=list(X.columns), columns=['SHAP Value'])
     feature_importance = feature_importance.sort_values('SHAP Value', ascending=True)
 
@@ -109,7 +109,7 @@ if st.button("Analyze Cluster"):
     st.subheader("SHAP Summary Plot - Cluster {cluster_num}")
     fig_summary = plt.figure(figsize=(12, 8))
     shap.summary_plot(
-        shap_values[:, :, 1],
+        shap_values[1],
         X_test,
         feature_names=list(X.columns),
         max_display=25,

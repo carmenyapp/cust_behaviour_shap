@@ -100,13 +100,13 @@ if st.button("Analyze Cluster"):
     plt.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
     plt.yticks(range(len(feature_importance)), feature_importance.index)
     plt.xlabel('mean(|SHAP value|)')
-    plt.title(f'Feature Importance Plot - Cluster {cluster_num}')
+    plt.title(f'Feature Importance Plot - Cluster {selected_cluster}')
     plt.tight_layout()
     st.pyplot(plt)
     plt.close()
 
     # 2. SHAP Summary Plot
-    st.subheader("SHAP Summary Plot - Cluster {cluster_num}")
+    st.subheader("SHAP Summary Plot - Cluster {selected_cluster}")
     fig_summary = plt.figure(figsize=(12, 8))
     shap.summary_plot(
         shap_values[1],

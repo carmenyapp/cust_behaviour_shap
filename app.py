@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import shap
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Streamlit UI Configuration
 st.set_page_config(layout="wide")

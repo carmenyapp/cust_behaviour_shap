@@ -55,45 +55,37 @@ def apply_kprototypes(df, categorical_cols, n_clusters):
 df, categorical_cols = load_data()
 n_clusters = st.slider("Select Number of Cluster for Segmentation", min_value=2, max_value=6, value=3, step=1)
 
-if st.button("Segment Customer"):
+if st.button("Segment"):
     df = apply_kprototypes(df, categorical_cols, n_clusters)
+    st.session_state.segmented_df = df  # Save the segmented DataFrame
+    st.session_state.clusters = sorted(df['Cluster'].unique())  
     
     X = df.drop('Cluster', axis=1)
     y = df['Cluster']
-    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    # Train a classifier
+
     clf = RandomForestClassifier(random_state=42)
     clf.fit(X_train, y_train)
-    
-    # Predict on the test set
     y_pred = clf.predict(X_test)
-    
-    # Evaluate the F1 score
     f1 = f1_score(y_test, y_pred, average='weighted')
     st.write(f"F1 Score for K-Prototype: {f1:.4f}")
-    
-    clusters = sorted(df['Cluster'].unique())
-    selected_cluster = st.selectbox("Select a Cluster for Analysis", clusters)
-    
+
+if st.session_state.segmented_df is not None:
+    selected_cluster = st.selectbox("Select a Cluster for Analysis", st.session_state.clusters)
+
     if st.button("Analyze Cluster"):
         # Binary target for the selected cluster
+        df = st.session_state.segmented_df.copy()
         st.write(f"Analyzing Cluster {selected_cluster}")
         df['binary_target'] = (df['Cluster'] == selected_cluster).astype(int)
         
         # Features and target
         X = df.drop(columns=['Cluster', 'binary_target'])
         y = df['binary_target']
-        
-        # Train-test split
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
         
-        # Train model
         model = RandomForestClassifier(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
-        
-        # Predictions and classification report
         y_pred = model.predict(X_test)
     
         report = classification_report(y_test, y_pred, output_dict=True)

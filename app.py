@@ -128,8 +128,10 @@ if st.button("Analyze Cluster"):
         feature_names=list(X.columns),
         max_display=25,
         plot_type="dot",
-        show=False
+        show=False,
+        ax=ax
     )
+    plt.tight_layout()
     st.pyplot(plt.gcf())
     plt.close()
 

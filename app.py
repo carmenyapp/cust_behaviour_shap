@@ -117,6 +117,7 @@ if st.button("Analyze Cluster"):
     ax.set_xlabel('mean(|SHAP value|)')
     ax.set_title(f'Feature Importance - Cluster {selected_cluster}')
     st.pyplot(fig)
+    plt.close()
 
     # 2. SHAP Summary Plot
     st.subheader(f"SHAP Summary Plot - Cluster {selected_cluster}")
@@ -126,6 +127,7 @@ if st.button("Analyze Cluster"):
         X_test,
         feature_names=list(X.columns),
         max_display=25,
+        plot_type="dot",
         show=False
     )
     st.pyplot(plt.gcf())

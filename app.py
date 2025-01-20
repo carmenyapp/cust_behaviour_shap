@@ -121,48 +121,18 @@ if st.button("Analyze Cluster"):
 
     # 2. SHAP Summary Plot
     st.subheader(f"SHAP Summary Plot - Cluster {selected_cluster}")
-    fig = plt.figure(figsize=(14, 8))  # Made wider to accommodate colorbar
-    plt.subplot(111)  # Create a single subplot
-    
-    # Get feature importance
-    feature_importance = np.abs(shap_values[1]).mean(0)
-    feature_order = np.argsort(feature_importance)
-    ordered_features = [X_test.columns[i] for i in feature_order]
-    
-    # Create custom summary plot
-    plt.barh(range(len(feature_importance)), 
-             feature_importance[feature_order],
-             color='#1E88E5')  # Use a consistent blue color
-    
-    # Customize the plot
-    plt.yticks(range(len(feature_importance)), ordered_features)
-    plt.xlabel('mean(|SHAP value|)')
-    plt.title('Feature Importance based on SHAP Values')
-    
-    # Adjust layout
+    fig = plt.figure(figsize=(12, 8))
+    shap.summary_plot(
+        shap_values[1],
+        X_test,
+        feature_names=list(X.columns),
+        max_display=25,
+        plot_type="dot",
+        show=False
+    )
     plt.tight_layout()
-    
-    # Show in Streamlit
-    st.pyplot(fig)
-    plt.close('all')
-    
-    # Also show a more detailed SHAP beeswarm plot if needed
-    st.subheader(f"SHAP Feature Impacts - Cluster {selected_cluster}")
-    fig = plt.figure(figsize=(14, 8))
-    
-    # Create beeswarm plot without colorbar
-    shap_df = pd.DataFrame(shap_values[1], columns=X_test.columns)
-    for i, col in enumerate(ordered_features[-20:]):  # Show top 20 features
-        plt.scatter(shap_df[col], [i]*len(shap_df), 
-                    alpha=0.3, 
-                    s=30)
-    
-    plt.yticks(range(len(ordered_features[-20:])), ordered_features[-20:])
-    plt.xlabel('SHAP value')
-    
-    plt.tight_layout()
-    st.pyplot(fig)
-    plt.close('all')
+    st.pyplot(plt.gcf())
+    plt.close()
 
     top_feature_idx = np.argmax(mean_shap)
     top_feature_name = list(X.columns)[top_feature_idx]

@@ -121,19 +121,20 @@ if st.button("Analyze Cluster"):
 
     # 2. SHAP Summary Plot
     st.subheader(f"SHAP Summary Plot - Cluster {selected_cluster}")
-    fig = plt.figure(figsize=(12, 8))
+    plt.figure(figsize=(12, 8))
 
+# Create SHAP plot with bar type (more stable than dot plot)
     shap.summary_plot(
         shap_values[1],
         X_test,
         feature_names=list(X.columns),
         max_display=25,
-        plot_type="dot",
+        plot_type="bar",  # Use bar instead of dot to avoid colorbar issues
         show=False
     )
-    plt.tight_layout()
+    
     st.pyplot(plt.gcf())
-    plt.close()
+    plt.close('all')
 
     top_feature_idx = np.argmax(mean_shap)
     top_feature_name = list(X.columns)[top_feature_idx]

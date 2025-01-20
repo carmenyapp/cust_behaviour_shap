@@ -70,6 +70,9 @@ if st.button("Segment"):
     f1 = f1_score(y_test, y_pred, average='weighted')
     st.write(f"F1 Score for K-Prototype: {f1:.4f}")
 
+if "segmented_df" not in st.session_state:
+    st.session_state.segmented_df = None
+    
 if st.session_state.segmented_df is not None:
     selected_cluster = st.selectbox("Select a Cluster for Analysis", st.session_state.clusters)
 

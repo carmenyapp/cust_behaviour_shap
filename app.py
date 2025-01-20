@@ -123,7 +123,7 @@ if st.button("Analyze Cluster"):
     st.subheader(f"SHAP Summary Plot - Cluster {selected_cluster}")
     fig = plt.figure(figsize=(12, 8))
     shap.summary_plot(
-        shap_values[1],
+        shap_values[:,:,1],
         X_test,
         feature_names=list(X.columns),
         max_display=25,
@@ -141,7 +141,7 @@ if st.button("Analyze Cluster"):
     fig_dep, ax_dep = plt.subplots(figsize=(12, 8))
     shap.dependence_plot(
         top_feature_idx,
-        shap_values[1],
+        shap_values[:,:,1],
         X_test,
         feature_names=list(X.columns),
         show=False,

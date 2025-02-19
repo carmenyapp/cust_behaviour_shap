@@ -1,14 +1,14 @@
 import streamlit as st
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.metrics import classification_report, f1_score
+from datetime import datetime
 from kmodes.kprototypes import KPrototypes
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score, classification_report
 import shap
 import matplotlib.pyplot as plt
 import numpy as np
-from datetime import datetime
 
 # Streamlit UI Configuration
 st.set_page_config(layout="wide")
@@ -70,80 +70,80 @@ if st.button("Segment"):
     f1 = f1_score(y_test, y_pred, average='weighted')
     st.write(f"F1 Score for K-Prototype: {f1:.4f}")
 
-if "segmented_df" not in st.session_state:
-    st.session_state.segmented_df = None
-    
-if st.session_state.segmented_df is not None:
-    selected_cluster = st.selectbox("Select a Cluster for Analysis", st.session_state.clusters)
+if "segmented_df" in st.session_state and st.session_state.segmented_df is not None:
+    show_classification_report = st.checkbox("Show Classification Report")
+    show_feature_importance = st.checkbox("Show Feature Importance Bar Plot")
+    show_shap_summary = st.checkbox("Show SHAP Summary Plot")
+    show_shap_dependence = st.checkbox("Show SHAP Dependence Plot")
 
     if st.button("Analyze Cluster"):
-        # Binary target for the selected cluster
-        df = st.session_state.segmented_df.copy()
-        st.write(f"Analyzing Cluster {selected_cluster}")
-        df['binary_target'] = (df['Cluster'] == selected_cluster).astype(int)
+        for cluster in st.session_state.clusters:
+            df = st.session_state.segmented_df.copy()
+            df['binary_target'] = (df['Cluster'] == cluster).astype(int)
         
-        # Features and target
-        X = df.drop(columns=['Cluster', 'binary_target'])
-        y = df['binary_target']
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-        
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-    
-        report = classification_report(y_test, y_pred, output_dict=True)
-        report_df = pd.DataFrame(report).transpose()
-        st.write("Classification Report:")
-        st.table(report_df)
+            # Features and target
+            X = df.drop(columns=['Cluster', 'binary_target'])
+            y = df['binary_target']
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+            
+            model = RandomForestClassifier(n_estimators=100, random_state=42)
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
+
+        if show_classification_report:
+            report = classification_report(y_test, y_pred, output_dict=True)
+            report_df = pd.DataFrame(report).transpose()
+            st.write("Classification Report:")
+            st.table(report_df)
         
         # SHAP analysis
         explainer = shap.TreeExplainer(model, model_output='raw')
         shap_values = explainer.shap_values(X_test)
+        mean_shap = np.abs(shap_values[:,:,1]).mean(axis=0)
         
-        # 1. Feature Importance Bar Plot
-        st.subheader(f"Feature Importance - Cluster {selected_cluster}")
-        mean_shap = np.abs(shap_values[:,:,1]).mean(axis=0)  
-        feature_importance = pd.DataFrame(mean_shap, index=list(X.columns), columns=['SHAP Value'])
-        feature_importance = feature_importance.sort_values('SHAP Value', ascending=True)
-    
-        # Bar plot for feature importance
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
-        ax.set_yticks(range(len(feature_importance)))
-        ax.set_yticklabels(feature_importance.index)
-        ax.set_xlabel('mean(|SHAP value|)')
-        ax.set_title(f'Feature Importance - Cluster {selected_cluster}')
-        st.pyplot(fig)
-        plt.close()
-    
-        # 2. SHAP Summary Plot
-        st.subheader(f"SHAP Summary Plot - Cluster {selected_cluster}")
-        fig = plt.figure(figsize=(12, 8))
-        shap.summary_plot(
-            shap_values[:,:,1],
-            X_test,
-            feature_names=list(X.columns),
-            max_display=25,
-            plot_type="dot",
-            show=False
-        )
-        plt.tight_layout()
-        st.pyplot(plt.gcf())
-        plt.close()
-    
-        top_feature_idx = np.argmax(mean_shap)
-        top_feature_name = list(X.columns)[top_feature_idx]
+        if show_feature_importance:
+            st.subheader(f"Feature Importance - Cluster {cluster}")
+            feature_importance = pd.DataFrame(mean_shap, index=list(X.columns), columns=['SHAP Value'])
+            feature_importance = feature_importance.sort_values('SHAP Value', ascending=True)
         
-        st.subheader(f"SHAP Dependence Plot - {top_feature_name}")
-        fig_dep, ax_dep = plt.subplots(figsize=(12, 8))
-        shap.dependence_plot(
-            top_feature_idx,
-            shap_values[:,:,1],
-            X_test,
-            feature_names=list(X.columns),
-            show=False,
-            ax=ax_dep
-        )
-        st.pyplot(fig_dep)
-        plt.close()
+            # Bar plot for feature importance
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
+            ax.set_yticks(range(len(feature_importance)))
+            ax.set_yticklabels(feature_importance.index)
+            ax.set_xlabel('mean(|SHAP value|)')
+            ax.set_title(f'Feature Importance - Cluster {selected_cluster}')
+            st.pyplot(fig)
+            plt.close()
+    
+        if show_shap_summary:
+            st.subheader(f"SHAP Summary Plot - Cluster {cluster}")
+            fig = plt.figure(figsize=(12, 8))
+            shap.summary_plot(
+                shap_values[:,:,1],
+                X_test,
+                feature_names=list(X.columns),
+                max_display=25,
+                plot_type="dot",
+                show=False
+            )
+            plt.tight_layout()
+            st.pyplot(plt.gcf())
+            plt.close()
+
+        if show_shap_dependence:
+            top_feature_idx = np.argmax(mean_shap)
+            top_feature_name = list(X.columns)[top_feature_idx]
+            st.subheader(f"SHAP Dependence Plot - {top_feature_name}")
+            fig_dep, ax_dep = plt.subplots(figsize=(12, 8))
+            shap.dependence_plot(
+                top_feature_idx,
+                shap_values[:,:,1],
+                X_test,
+                feature_names=list(X.columns),
+                show=False,
+                ax=ax_dep
+            )
+            st.pyplot(fig_dep)
+            plt.close()
 

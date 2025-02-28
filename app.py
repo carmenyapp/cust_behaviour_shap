@@ -165,3 +165,4 @@ if "segmented_df" in st.session_state and st.session_state.segmented_df is not N
                 **Cluster 3:** 
                 Frequent to medium website visits, medium to high wine lover, frequently purchases from website and deals, medium income level, frequently purchases gold, many teens in home.
                 """)
+                break

@@ -153,11 +153,15 @@ if "segmented_df" in st.session_state and st.session_state.segmented_df is not N
                 st.write("## Cluster Characteristics:")  # Use markdown for a header
 
                 st.markdown("""
-                **Cluster 0:** Value quality and premium products, seldom website visits, high income level, frequently purchases catalogs, frequently purchases fish, fruit, and sweets, seldom purchases with deals, less or no children (kid and teen) in home.
+                **Cluster 0:** 
+                Value quality and premium products, seldom website visits, high income level, frequently purchases catalogs, frequently purchases fish, fruit, and sweets, seldom purchases with deals, less or no children (kid and teen) in home.
             
-                **Cluster 1:** Low to medium website visits, seldom purchases products, mid-income level, rarely purchases catalogs, high number of teens in home.
+                **Cluster 1:** 
+                Low to medium website visits, seldom purchases products, mid-income level, rarely purchases catalogs, high number of teens in home.
             
-                **Cluster 2:** Frequently visits website, mid-lower income level, seldom purchases products, seldom purchases in store, rarely purchases catalogs, many kids in home.
+                **Cluster 2:** 
+                Frequently visits website, mid-lower income level, seldom purchases products, seldom purchases in store, rarely purchases catalogs, many kids in home.
             
-                **Cluster 3:** Frequent to medium website visits, medium to high wine lover, frequently purchases from website and deals, medium income level, frequently purchases gold, many teens in home.
+                **Cluster 3:** 
+                Frequent to medium website visits, medium to high wine lover, frequently purchases from website and deals, medium income level, frequently purchases gold, many teens in home.
                 """)

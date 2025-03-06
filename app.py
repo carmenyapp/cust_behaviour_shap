@@ -9,6 +9,9 @@ from sklearn.metrics import f1_score, classification_report
 import shap
 import matplotlib.pyplot as plt
 import numpy as np
+import openai
+
+openai.api_key =  st.secrets["mykey"]
 
 @st.cache_data
 def load_data():

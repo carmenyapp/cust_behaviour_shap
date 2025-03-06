@@ -83,7 +83,6 @@ def generate_marketing_text(cluster_name, cluster_description):
 
 def customer_segmentation_and_analysis():
     # Streamlit UI Configuration
-    st.set_page_config(layout="wide")
     st.title("Customer Segmentation and Cluster Analysis")
         
     # Load dataset

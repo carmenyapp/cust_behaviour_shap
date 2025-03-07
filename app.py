@@ -61,13 +61,13 @@ cluster_descriptions = {
 def marketing_text_generator():
     st.write("## Marketing Messages for Each Cluster")
     for cluster, description in cluster_descriptions.items():
-        marketing_text = generate_marketing_text(cluster, description)
+        marketing_text = generate_marketing_text(description)
         st.markdown(f"### {cluster}")
         st.write(marketing_text)
 
-def generate_marketing_text(cluster_name, cluster_description):
+def generate_marketing_text(cluster_description):
     prompt = f"""
-    Generate a compelling marketing message for {cluster_name} based on the following customer characteristics:
+    Generate a compelling marketing message for customer engagement based on the following customer characteristics:
     {cluster_description}
     The message should highlight relevant promotions, engagement strategies, and personalized offers.
     """

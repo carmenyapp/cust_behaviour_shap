@@ -58,28 +58,38 @@ cluster_descriptions = {
     "Cluster 3": "Frequent to medium website visits, medium to high wine lover, frequently purchases from website and deals, medium income level, frequently purchases gold, many teens in home."
 }
 
-def marketing_text_generator():
-    st.write("## Marketing Messages for Each Cluster")
-    for cluster, description in cluster_descriptions.items():
-        marketing_text = generate_marketing_text(description)
-        st.markdown(f"### {cluster}")
-        st.write(marketing_text)
+def generate_ai_message():
+    st.write("## AI Message Generator")
 
-def generate_marketing_text(cluster_description):
-    prompt = f"""
-    Generate a compelling marketing message for customer engagement based on the following customer characteristics:
-    {cluster_description}
-    The message should highlight relevant promotions, engagement strategies, and personalized offers.
-    """
-    
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a marketing expert specializing in personalized customer engagement."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    return response["choices"][0]["message"]["content"].strip()
+    user_name = st.text_input("User Name (Optional):")
+    selected_cluster = st.selectbox("Select a Cluster:", list(cluster_descriptions.keys()))
+    user_case = st.text_area("Enter your requirement (e.g., wine product recommender, churn customer reactivation):")
+
+    if st.button("Generate Message"):
+        if not user_case:
+            st.error("Please enter your requirement.")
+            return
+
+        cluster_description = cluster_descriptions[selected_cluster]
+        prompt = f"""
+        Generate a personalized message for customer engagement based on the following:
+
+        Customer Characteristics: {cluster_description}
+        User Requirement: {user_case}
+        """
+        if user_name:
+            prompt = f"Generate a personalized message for {user_name} based on the following:\n\n" + prompt
+
+        response = openai.ChatCompletion.create(
+            model="gpt-4o mini",
+            messages=[
+                {"role": "system", "content": "You are a marketing expert specializing in personalized customer engagement."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        marketing_text = response["choices"][0]["message"]["content"].strip()
+        st.markdown(f"### Generated Message for {selected_cluster}:")
+        st.write(marketing_text)
 
 def customer_segmentation_and_analysis():
     # Streamlit UI Configuration
@@ -194,5 +204,5 @@ option = st.sidebar.radio("Select a feature:", ["Customer Segmentation and Clust
 
 if option == "Customer Segmentation and Cluster Analysis":
     customer_segmentation_and_analysis()
-elif option == "Marketing Text Generator for Clusters":
-    marketing_text_generator()
+elif option == "AI Message Generator for Clusters":
+    generate_ai_message()

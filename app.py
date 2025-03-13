@@ -200,7 +200,7 @@ def customer_segmentation_and_analysis():
                     st.markdown(f"**{cluster}:** {description}")
                 
 st.sidebar.title("Navigation")
-option = st.sidebar.radio("Select a feature:", ["Customer Segmentation and Cluster Analysis", "Marketing Text Generator for Clusters"])
+option = st.sidebar.radio("Select a feature:", ["Customer Segmentation and Cluster Analysis", "AI Message Generator for Clusters"])
 
 if option == "Customer Segmentation and Cluster Analysis":
     customer_segmentation_and_analysis()

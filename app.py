@@ -81,7 +81,7 @@ def generate_ai_message():
             prompt = f"Generate a personalized message for {user_name} based on the following:\n\n" + prompt
 
         response = openai.ChatCompletion.create(
-            model="gpt-4o mini",
+            model="gpt-3.5",
             messages=[
                 {"role": "system", "content": "You are a marketing expert specializing in personalized customer engagement."},
                 {"role": "user", "content": prompt}

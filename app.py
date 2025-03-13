@@ -63,7 +63,7 @@ def generate_ai_message():
 
     user_name = st.text_input("User Name (Optional):")
     selected_cluster = st.selectbox("Select a Cluster:", list(cluster_descriptions.keys()))
-    user_case = st.text_area("Enter your requirement (e.g., wine product recommender, churn customer reactivation):")
+    user_case = st.text_area("Enter your requirement (e.g. Alert the customer to a special deal on their favorite wine and luxury items, emphasizing the value and exclusivity of the offer.):")
 
     if st.button("Generate Message"):
         if not user_case:

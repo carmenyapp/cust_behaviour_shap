@@ -234,10 +234,10 @@ if st.button("Segment and Analyze"):
             st.session_state.feature_names
         )
         
-        # Display the generated descriptions
-        for cluster, description in st.session_state.cluster_descriptions_ai.items():
-            st.subheader(f"{cluster} Description")
-            st.write(description)
+    # Display the generated descriptions
+    for cluster, description in st.session_state.cluster_descriptions_ai.items():
+        st.subheader(f"{cluster} Description")
+        st.write(description)
         
     # Visualization options
     show_classification_report = st.checkbox("Show Classification Report")

@@ -49,17 +49,44 @@ def apply_kprototypes(df, categorical_cols, n_clusters):
     clusters = kproto.fit_predict(df, categorical=categorical_indices)
     df['Cluster'] = clusters
     return df
+
+@st.cache_data
+def perform_clustering_and_analysis(df, categorical_cols, n_clusters_to_use):
+    """
+    Perform clustering, model training, and SHAP analysis with caching
+    """
+    # Apply K-Prototypes clustering
+    df_segmented = apply_kprototypes(df.copy(), categorical_cols, n_clusters_to_use)
     
-@st.cache_resource
-def train_shap_model(X_train, y_train, X_test):
+    # Prepare data for model training
+    X = df_segmented.drop('Cluster', axis=1)
+    y = df_segmented['Cluster']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Train RandomForestClassifier
+    clf = RandomForestClassifier(random_state=42)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    f1 = f1_score(y_test, y_pred, average='weighted')
+
+    # SHAP analysis
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
-    
     explainer = shap.TreeExplainer(model, model_output='raw')
     shap_values = explainer.shap_values(X_test)
-    
-    return model, shap_values
-    
+
+    return {
+        'df_segmented': df_segmented,
+        'clusters': sorted(df_segmented['Cluster'].unique()),
+        'X_test': X_test,
+        'shap_values': shap_values,
+        'feature_names': list(X.columns),
+        'f1_score': f1,
+        'y_test': y_test,
+        'y_pred': y_pred
+    }
+
+@st.cache_data
 def generate_cluster_descriptions(shap_values, X_test, feature_names, num_clusters):
     if isinstance(shap_values, list):
         shap_values = np.array(shap_values)
@@ -176,104 +203,128 @@ def generate_ai_message(cluster_description, user_name, user_case):
         st.error(f"Error generating AI message: {e}")
         return "Message could not be generated."
 
-# Streamlit UI Configuration
-st.title("Message Generation from Customer Analysis")
-
-if 'n_clusters_determined' not in st.session_state:
-    st.session_state['n_clusters_determined'] = False
-if 'n_clusters_value' not in st.session_state:
-    st.session_state['n_clusters_value'] = 3 
-
-# Load dataset
-df, categorical_cols = load_data()
-
-# Automated Cluster Number Selection
-st.subheader("Automated Cluster Number Selection")
-auto_determine_clusters = st.checkbox("Automatically determine the number of clusters (within 3-6)?")
-if auto_determine_clusters and not st.session_state['n_clusters_determined']:
-    silhouette_scores = {}
-    with st.spinner("Determining optimal number of clusters..."):
-        for n_clusters in range(3, 7):
-            df_temp = apply_kprototypes(df.copy(), categorical_cols, n_clusters)
-            # Ensure there's more than one cluster for silhouette score
-            if len(df_temp['Cluster'].unique()) > 1:
-                # Separate numerical and categorical data for silhouette score
-                numerical_data = df_temp.drop('Cluster', axis=1).select_dtypes(include=np.number)
-                if not numerical_data.empty:
-                    silhouette_avg = silhouette_score(numerical_data, df_temp['Cluster'])
-                    silhouette_scores[n_clusters] = silhouette_avg
+def clustering_analysis():
+    # Streamlit UI Configuration
+    st.title("Message Generation from Customer Analysis")
+    
+    if 'n_clusters_determined' not in st.session_state:
+        st.session_state['n_clusters_determined'] = False
+    if 'n_clusters_value' not in st.session_state:
+        st.session_state['n_clusters_value'] = 3 
+    
+    # Load dataset
+    df, categorical_cols = load_data()
+    
+    # Automated Cluster Number Selection
+    st.subheader("Automated Cluster Number Selection")
+    auto_determine_clusters = st.checkbox("Automatically determine the number of clusters (within 3-6)?")
+    if auto_determine_clusters and not st.session_state['n_clusters_determined']:
+        silhouette_scores = {}
+        with st.spinner("Determining optimal number of clusters..."):
+            for n_clusters in range(3, 7):
+                df_temp = apply_kprototypes(df.copy(), categorical_cols, n_clusters)
+                # Ensure there's more than one cluster for silhouette score
+                if len(df_temp['Cluster'].unique()) > 1:
+                    # Separate numerical and categorical data for silhouette score
+                    numerical_data = df_temp.drop('Cluster', axis=1).select_dtypes(include=np.number)
+                    if not numerical_data.empty:
+                        silhouette_avg = silhouette_score(numerical_data, df_temp['Cluster'])
+                        silhouette_scores[n_clusters] = silhouette_avg
+                    else:
+                        st.warning(f"No numerical data to calculate silhouette score for {n_clusters} clusters.")
                 else:
-                    st.warning(f"No numerical data to calculate silhouette score for {n_clusters} clusters.")
-            else:
-                silhouette_scores[n_clusters] = -1 # Indicate invalid
-
-    if silhouette_scores:
-        best_n_clusters = max(silhouette_scores, key=silhouette_scores.get)
-        st.success(f"Optimal number of clusters found: {best_n_clusters} (Silhouette Score: {silhouette_scores[best_n_clusters]:.4f})")
+                    silhouette_scores[n_clusters] = -1 # Indicate invalid
+    
+        if silhouette_scores:
+            best_n_clusters = max(silhouette_scores, key=silhouette_scores.get)
+            st.success(f"Optimal number of clusters found: {best_n_clusters} (Silhouette Score: {silhouette_scores[best_n_clusters]:.4f})")
+            st.session_state['n_clusters_value'] = best_n_clusters
+        else:
+            st.warning("Could not determine optimal number of clusters. Using default (3).")
+            st.session_state['n_clusters_value'] = 3
+        st.session_state['n_clusters_determined'] = True
         st.session_state['n_clusters_value'] = best_n_clusters
-    else:
-        st.warning("Could not determine optimal number of clusters. Using default (3).")
-        st.session_state['n_clusters_value'] = 3
-    st.session_state['n_clusters_determined'] = True
-    st.session_state['n_clusters_value'] = best_n_clusters
-elif not auto_determine_clusters:
-    st.session_state['n_clusters_determined'] = False
-    st.session_state['n_clusters_value'] = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
-
-if st.button("Segment and Analyze"):
-    n_clusters_to_use = st.session_state['n_clusters_value']
-    st.write(f"Using {n_clusters_to_use} clusters for segmentation.")
-    df_segmented = apply_kprototypes(df.copy(), categorical_cols, n_clusters_to_use)
+    elif not auto_determine_clusters:
+        st.session_state['n_clusters_determined'] = False
+        st.session_state['n_clusters_value'] = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
     
-    X = df_segmented.drop('Cluster', axis=1)
-    y = df_segmented['Cluster']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    if st.button("Segment and Analyze"):
+        with st.spinner("Performing clustering and analysis..."):
+        n_clusters_to_use = st.session_state['n_clusters_value']
+        analysis_results = perform_clustering_and_analysis(
+                    df,
+                    categorical_cols, 
+                    n_clusters_to_use
+                )
+                # Store results in session state for later use
+                st.session_state.analysis_results = analysis_results
+                st.session_state.clusters = analysis_results['clusters']
+                
+                # Redirect or show success message
+                st.success("Analysis complete! Proceed to detailed analysis.")
 
-    clf = RandomForestClassifier(random_state=42)
-    clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_test)
-    f1 = f1_score(y_test, y_pred, average='weighted')
-    st.write(f"F1 Score for K-Prototype: {f1:.4f}")
+def result_text_generator():
+    st.title("Detail Analysis & AI Text Generator")
 
-    model, shap_values = train_shap_model(X_train, y_train, X_test)
-    
-    st.session_state.segmented_df = df_segmented  # Save the segmented DataFrame
-    st.session_state.clusters = sorted(df_segmented['Cluster'].unique())
-    st.session_state.shap_values = shap_values
-    st.session_state.X_test = X_test
-    st.session_state.feature_names = list(X.columns)
+    if 'analysis_results' not in st.session_state:
+        st.warning("Please perform customer analysis first.")
+        return
 
-    # Generate cluster descriptions using AI based on SHAP
-    with st.spinner("Generating cluster descriptions and marketing suggestions from SHAP..."):
-       st.session_state.cluster_descriptions_ai = generate_cluster_descriptions(
-            st.session_state.shap_values, 
-            st.session_state.X_test, 
-            st.session_state.feature_names,
-           n_clusters_to_use
-        )
-        
-    # Display the generated descriptions
+    # Retrieve cached analysis results
+    analysis_results = st.session_state.analysis_results
+
+    # Display basic clustering information
+    st.write(f"Using {len(analysis_results['clusters'])} clusters")
+    st.write(f"F1 Score: {analysis_results['f1_score']:.4f}")
+
+    # Cluster Descriptions
+    st.header("Cluster Descriptions")
+    if 'cluster_descriptions_ai' not in st.session_state:
+        # Generate descriptions if not already done
+        with st.spinner("Generating cluster descriptions..."):
+            st.session_state.cluster_descriptions_ai = generate_cluster_descriptions_cached(
+                analysis_results['shap_values'], 
+                analysis_results['X_test'], 
+                analysis_results['feature_names'],
+                len(analysis_results['clusters'])
+            )
+
+    # Display cluster descriptions
     for cluster, description in st.session_state.cluster_descriptions_ai.items():
-        st.subheader(f"{cluster} Description")
+        st.subheader(f"Cluster {cluster} Description")
         st.write(description)
-        
-    # Visualization options
-    show_classification_report = st.checkbox("Show Classification Report")
-    show_feature_importance = st.checkbox("Show Feature Importance Bar Plot")
-    show_shap_summary = st.checkbox("Show SHAP Summary Plot")
-    show_shap_dependence = st.checkbox("Show SHAP Dependence Plot")
 
+    # Visualization and Analysis Options
+    st.header("Analysis Visualizations")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        show_classification_report = st.checkbox("Classification Report")
+    with col2:
+        show_feature_importance = st.checkbox("Feature Importance")
+    with col3:
+        show_shap_summary = st.checkbox("SHAP Summary")
+    with col4:
+        show_shap_dependence = st.checkbox("SHAP Dependence")
+
+    # Visualization Logic (similar to previous implementation)
     if show_classification_report:
-        report = classification_report(y_test, y_pred, output_dict=True)
+        report = classification_report(
+            analysis_results['y_test'], 
+            analysis_results['y_pred'], 
+            output_dict=True
+        )
         report_df = pd.DataFrame(report).transpose()
         st.write("Classification Report:")
         st.table(report_df)
 
     if show_feature_importance:
-        mean_shap = np.abs(st.session_state.shap_values[:,:,1]).mean(axis=0)
-        st.subheader("Feature Importance")
-        feature_importance = pd.DataFrame(mean_shap, index=st.session_state.feature_names, columns=['SHAP Value'])
-        feature_importance = feature_importance.sort_values('SHAP Value', ascending=True)
+        mean_shap = np.abs(analysis_results['shap_values'][:,:,1]).mean(axis=0)
+        feature_importance = pd.DataFrame(
+            mean_shap, 
+            index=analysis_results['feature_names'], 
+            columns=['SHAP Value']
+        ).sort_values('SHAP Value', ascending=True)
 
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
@@ -288,9 +339,9 @@ if st.button("Segment and Analyze"):
         st.subheader("SHAP Summary Plot")
         fig = plt.figure(figsize=(12, 8))
         shap.summary_plot(
-            st.session_state.shap_values[:,:,1],
-            st.session_state.X_test,
-            feature_names=st.session_state.feature_names,
+            analysis_results['shap_values'][:,:,1],
+            analysis_results['X_test'],
+            feature_names=analysis_results['feature_names'],
             max_display=25,
             plot_type="dot",
             show=False
@@ -300,16 +351,17 @@ if st.button("Segment and Analyze"):
         plt.close()
 
     if show_shap_dependence:
-        mean_shap = np.abs(st.session_state.shap_values[:,:,1]).mean(axis=0)
+        mean_shap = np.abs(analysis_results['shap_values'][:,:,1]).mean(axis=0)
         top_feature_idx = np.argmax(mean_shap)
-        top_feature_name = st.session_state.feature_names[top_feature_idx]
+        top_feature_name = analysis_results['feature_names'][top_feature_idx]
+        
         st.subheader(f"SHAP Dependence Plot - {top_feature_name}")
         fig_dep, ax_dep = plt.subplots(figsize=(12, 8))
         shap.dependence_plot(
             top_feature_idx,
-            st.session_state.shap_values[:,:,1],
-            st.session_state.X_test,
-            feature_names=st.session_state.feature_names,
+            analysis_results['shap_values'][:,:,1],
+            analysis_results['X_test'],
+            feature_names=analysis_results['feature_names'],
             show=False,
             ax=ax_dep
         )
@@ -317,8 +369,11 @@ if st.button("Segment and Analyze"):
         plt.close()
 
     # AI Message Generator Section
-    st.subheader("AI Message Generator")
-    selected_cluster_ai = st.selectbox("Select a Cluster for Message Generation:", list(st.session_state.cluster_descriptions_ai.keys()))
+    st.header("AI Message Generator")
+    selected_cluster_ai = st.selectbox(
+        "Select a Cluster for Message Generation:", 
+        list(st.session_state.cluster_descriptions_ai.keys())
+    )
     user_name_ai = st.text_input("User Name (Optional):")
     user_case_ai = st.text_area("Enter your requirement for the marketing message:")
 
@@ -328,6 +383,15 @@ if st.button("Segment and Analyze"):
         else:
             cluster_description_ai = st.session_state.cluster_descriptions_ai[selected_cluster_ai]
             with st.spinner("Generating marketing message..."):
-                marketing_text = generate_ai_message(cluster_description_ai, user_name_ai, user_case_ai)
-                st.markdown(f"### Generated Message for {selected_cluster_ai}:")
+                marketing_text = generate_ai_message(
+                    cluster_description_ai, 
+                    user_name_ai, 
+                    user_case_ai
+                )
+                st.markdown(f"### Generated Message for Cluster {selected_cluster_ai}:")
                 st.write(marketing_text)
+
+if 'analysis_results' not in st.session_state:
+    clustering_analysis()
+else:
+    result_text_generator()

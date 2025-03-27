@@ -126,7 +126,7 @@ df, categorical_cols = load_data()
 
 # Automated Cluster Number Selection
 st.subheader("Automated Cluster Number Selection")
-auto_determine_clusters = st.checkbox("Automatically determine the number of clusters (within 3-6)?"):
+auto_determine_clusters = st.checkbox("Automatically determine the number of clusters (within 3-6)?")
 if auto_determine_clusters and not st.session_state['n_clusters_determined']:
     silhouette_scores = {}
     with st.spinner("Determining optimal number of clusters..."):

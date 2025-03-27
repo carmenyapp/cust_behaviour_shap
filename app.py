@@ -311,7 +311,7 @@ if st.session_state.get('cluster_descriptions_ai'):
     show_shap_dependence = st.checkbox("Show SHAP Dependence Plot")
 
     # Display Selected Visualizations
-   if show_classification_report:
+    if show_classification_report:
         report = classification_report(y_test, y_pred, output_dict=True)
         report_df = pd.DataFrame(report).transpose()
         st.write("Classification Report:")

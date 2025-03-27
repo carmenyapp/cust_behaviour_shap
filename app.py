@@ -51,15 +51,15 @@ def apply_kprototypes(df, categorical_cols, n_clusters):
     return df
     
 def generate_cluster_description_from_shap(shap_values, X_test, feature_names, cluster_id, segmented_df):
-    print("Shape of shap_values:", shap_values.shape)
-    print("Shape of X_test:", X_test.shape)
-    print("Number of feature names:", len(feature_names))
+    st.write("Shape of shap_values:", shap_values.shape)
+    st.write("Shape of X_test:", X_test.shape)
+    st.write("Number of feature names:", len(feature_names))
     
     cluster_indices = segmented_df[segmented_df['Cluster'] == cluster_id].index
 
-    print("Cluster ID:", cluster_id)
-    print("Cluster indices:", cluster_indices)
-    print("Max index in cluster_indices:", max(cluster_indices) if len(cluster_indices) > 0 else "No indices")
+    st.write("Cluster ID:", cluster_id)
+    st.write("Cluster indices:", cluster_indices)
+    st.write("Max index in cluster_indices:", max(cluster_indices) if len(cluster_indices) > 0 else "No indices")
     
     valid_indices = [idx for idx in cluster_indices if idx < shap_values.shape[0]]
     if not valid_indices:

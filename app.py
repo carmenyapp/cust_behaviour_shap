@@ -52,6 +52,9 @@ def apply_kprototypes(df, categorical_cols, n_clusters):
     
 def generate_cluster_description_from_shap(shap_values, X_test, feature_names, cluster_id, segmented_df):
     cluster_indices = segmented_df[segmented_df['Cluster'] == cluster_id].index
+    valid_indices = [idx for idx in cluster_indices if idx < shap_values.shape[0]]
+    if not valid_indices:
+        return "No valid data for this cluster"
     cluster_shap_values = shap_values[cluster_indices]
     avg_shap = np.mean(cluster_shap_values, axis=0)
     top_positive_features_indices = np.argsort(avg_shap)[::-1][:5]
@@ -113,12 +116,18 @@ def generate_ai_message(cluster_description, user_name, user_case):
 # Streamlit UI Configuration
 st.title("Customer Segmentation, Analysis, and Message Generation")
 
+if 'n_clusters_determined' not in st.session_state:
+    st.session_state['n_clusters_determined'] = False
+if 'n_clusters_value' not in st.session_state:
+    st.session_state['n_clusters_value'] = 3 
+
 # Load dataset
 df, categorical_cols = load_data()
 
 # Automated Cluster Number Selection
 st.subheader("Automated Cluster Number Selection")
-if st.checkbox("Automatically determine the number of clusters (within 3-6)?"):
+auto_determine_clusters = st.checkbox("Automatically determine the number of clusters (within 3-6)?"):
+if auto_determine_clusters and not st.session_state['n_clusters_determined']:
     silhouette_scores = {}
     with st.spinner("Determining optimal number of clusters..."):
         for n_clusters in range(3, 7):
@@ -138,14 +147,18 @@ if st.checkbox("Automatically determine the number of clusters (within 3-6)?"):
     if silhouette_scores:
         best_n_clusters = max(silhouette_scores, key=silhouette_scores.get)
         st.success(f"Optimal number of clusters found: {best_n_clusters} (Silhouette Score: {silhouette_scores[best_n_clusters]:.4f})")
-        n_clusters = best_n_clusters
+        st.session_state['n_clusters_value'] = best_n_clusters
     else:
         st.warning("Could not determine optimal number of clusters. Using default (3).")
-        n_clusters = 3
-else:
-    n_clusters = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
+        st.session_state['n_clusters_value'] = 3
+    st.session_state['n_clusters_determined'] = True
+elif not auto_determine_clusters:
+    st.session_state['n_clusters_determined'] = False
+    st.session_state['n_clusters_value'] = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
 
 if st.button("Segment and Analyze"):
+    n_clusters_to_use = st.session_state['n_clusters_value']
+    st.write(f"Using {n_clusters_to_use} clusters for segmentation.")
     df_segmented = apply_kprototypes(df.copy(), categorical_cols, n_clusters)
     st.session_state.segmented_df = df_segmented  # Save the segmented DataFrame
     st.session_state.clusters = sorted(df_segmented['Cluster'].unique())

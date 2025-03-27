@@ -231,7 +231,8 @@ if st.button("Segment and Analyze"):
        st.session_state.cluster_descriptions_ai = generate_cluster_descriptions(
             st.session_state.shap_values, 
             st.session_state.X_test, 
-            st.session_state.feature_names
+            st.session_state.feature_names,
+           n_clusters_to_use
         )
         
     # Display the generated descriptions

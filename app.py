@@ -50,6 +50,16 @@ def apply_kprototypes(df, categorical_cols, n_clusters):
     df['Cluster'] = clusters
     return df
     
+@st.cache_resource
+def train_shap_model(X_train, y_train, X_test):
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+    
+    explainer = shap.TreeExplainer(model, model_output='raw')
+    shap_values = explainer.shap_values(X_test)
+    
+    return model, shap_values
+    
 def generate_cluster_descriptions(shap_values, X_test, feature_names, num_clusters):
     if isinstance(shap_values, list):
         shap_values = np.array(shap_values)
@@ -63,10 +73,8 @@ def generate_cluster_descriptions(shap_values, X_test, feature_names, num_cluste
         # Binary or single-output case
         mean_abs_shap = np.abs(shap_values).mean(axis=0)
     
-    # Get top features by importance
     top_feature_indices = mean_abs_shap.argsort()[::-1]
-    
-    # Prepare cluster descriptions
+
     cluster_descriptions_ai = {}
     
     for cluster in range(num_clusters):
@@ -169,7 +177,7 @@ def generate_ai_message(cluster_description, user_name, user_case):
         return "Message could not be generated."
 
 # Streamlit UI Configuration
-st.title("Customer Segmentation, Analysis, and Message Generation")
+st.title("Message Generation from Customer Analysis")
 
 if 'n_clusters_determined' not in st.session_state:
     st.session_state['n_clusters_determined'] = False
@@ -216,9 +224,7 @@ if st.button("Segment and Analyze"):
     n_clusters_to_use = st.session_state['n_clusters_value']
     st.write(f"Using {n_clusters_to_use} clusters for segmentation.")
     df_segmented = apply_kprototypes(df.copy(), categorical_cols, n_clusters_to_use)
-    st.session_state.segmented_df = df_segmented  # Save the segmented DataFrame
-    st.session_state.clusters = sorted(df_segmented['Cluster'].unique())
-
+    
     X = df_segmented.drop('Cluster', axis=1)
     y = df_segmented['Cluster']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -229,17 +235,15 @@ if st.button("Segment and Analyze"):
     f1 = f1_score(y_test, y_pred, average='weighted')
     st.write(f"F1 Score for K-Prototype: {f1:.4f}")
 
-    # SHAP analysis
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
-    explainer = shap.TreeExplainer(model, model_output='raw')
-    shap_values = explainer.shap_values(X_test)
+    model, shap_values = train_shap_model(X_train, y_train, X_test)
+    
+    st.session_state.segmented_df = df_segmented  # Save the segmented DataFrame
+    st.session_state.clusters = sorted(df_segmented['Cluster'].unique())
     st.session_state.shap_values = shap_values
     st.session_state.X_test = X_test
     st.session_state.feature_names = list(X.columns)
 
     # Generate cluster descriptions using AI based on SHAP
-    st.session_state.cluster_descriptions_ai = {}
     with st.spinner("Generating cluster descriptions and marketing suggestions from SHAP..."):
        st.session_state.cluster_descriptions_ai = generate_cluster_descriptions(
             st.session_state.shap_values, 

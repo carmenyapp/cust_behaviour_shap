@@ -50,53 +50,86 @@ def apply_kprototypes(df, categorical_cols, n_clusters):
     df['Cluster'] = clusters
     return df
     
-def generate_cluster_description_from_shap(shap_values, X_test, feature_names, cluster_id, segmented_df):
-    st.write("Shape of shap_values:", shap_values.shape)
-    st.write("Shape of X_test:", X_test.shape)
-    st.write("Number of feature names:", len(feature_names))
+def generate_cluster_descriptions(shap_values, X_test, feature_names, num_clusters):
+    shap_values = np.array(shap_values)
+    X_test = np.array(X_test)
     
-    cluster_indices = segmented_df[segmented_df['Cluster'] == cluster_id].index
-
-    st.write("Cluster ID:", cluster_id)
-    st.write("Cluster indices:", cluster_indices)
-    st.write("Max index in cluster_indices:", max(cluster_indices) if len(cluster_indices) > 0 else "No indices")
+    # Calculate the absolute mean SHAP values for each feature
+    mean_abs_shap = np.abs(shap_values).mean(axis=0)
     
-    valid_indices = [idx for idx in cluster_indices if idx < shap_values.shape[0]]
-    if not valid_indices:
-        return "No valid data for this cluster"
-    cluster_shap_values = shap_values[cluster_indices]
-    avg_shap = np.mean(cluster_shap_values, axis=0)
-    top_positive_features_indices = np.argsort(avg_shap)[::-1][:5]
-    top_negative_features_indices = np.argsort(avg_shap)[:5]
+    # Get top features by importance
+    top_feature_indices = mean_abs_shap.argsort()[::-1]
+    
+    # Prepare cluster descriptions
+    cluster_descriptions_ai = {}
+    
+    for cluster in range(num_clusters):
+        # Select SHAP values for this cluster
+        cluster_shap = shap_values[cluster]
+        
+        # Prepare description components
+        top_positive_features = []
+        top_negative_features = []
+        
+        for idx in top_feature_indices[:5]:  # Top 5 features
+            feature_name = feature_names[idx]
+            feature_shap_value = cluster_shap[idx]
+            
+            if feature_shap_value > 0:
+                top_positive_features.append({
+                    'name': feature_name,
+                    'impact': feature_shap_value
+                })
+            else:
+                top_negative_features.append({
+                    'name': feature_name,
+                    'impact': abs(feature_shap_value)
+                })
+        
+        # Sort features by absolute impact
+        top_positive_features.sort(key=lambda x: x['impact'], reverse=True)
+        top_negative_features.sort(key=lambda x: x['impact'], reverse=True)
+        
+        # Generate AI description
+        description = generate_ai_description(
+            top_positive_features, 
+            top_negative_features
+        )
+        
+        cluster_descriptions_ai[f"Cluster {cluster}"] = description
+    
+    return cluster_descriptions_ai
 
-    positive_features = [feature_names[i] for i in top_positive_features_indices]
-    negative_features = [feature_names[i] for i in top_negative_features_indices]
+def generate_ai_description(positive_features, negative_features):
+    # Prepare the prompt
+    prompt = f"""Generate a concise and insightful description of a data cluster based on its most important features.
 
-    prompt = f"""
-    Analyze the following customer segment based on the most influential features identified by SHAP analysis.
-    Highlight the key characteristics of this segment.
-
-    Features that positively influence the cluster membership (high values in these features): {', '.join(positive_features)}
-    Features that negatively influence the cluster membership (low values in these features): {', '.join(negative_features)}
-
-    Based on these characteristics, suggest potential marketing angles or product recommendations that might resonate with this segment.
-
-    Provide a concise description (around 60 words) of this customer segment, followed by the marketing suggestions.
-    """
+    Positive Influential Features:
+    {', '.join([f"{f['name']} (impact: {f['impact']:.2f})" for f in positive_features])}
+    
+    Negative Influential Features:
+    {', '.join([f"{f['name']} (impact: {f['impact']:.2f})" for f in negative_features])}
+    
+    Description:"""
 
     try:
+        # Use OpenAI API to generate description
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are an expert in interpreting SHAP analysis for customer segmentation and generating marketing insights."},
+                {"role": "system", "content": "You are an expert data analyst describing a cluster's characteristics."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=200
+            max_tokens=150,
+            n=1,
+            stop=None,
+            temperature=0.7
         )
-        return response["choices"][0]["message"]["content"].strip()
+        
+        return response.choices[0].message.content.strip()
+    
     except Exception as e:
-        st.error(f"Error generating cluster description from SHAP: {e}")
-        return "Description could not be generated."
+        return f"Error generating description: {str(e)}"
 
 def generate_ai_message(cluster_description, user_name, user_case):
     prompt = f"""
@@ -195,21 +228,16 @@ if st.button("Segment and Analyze"):
     # Generate cluster descriptions using AI based on SHAP
     st.session_state.cluster_descriptions_ai = {}
     with st.spinner("Generating cluster descriptions and marketing suggestions from SHAP..."):
-        for cluster_id in st.session_state.clusters:
-            description = generate_cluster_description_from_shap(
-                st.session_state.shap_values[:,:,1],
-                st.session_state.X_test,
-                st.session_state.feature_names,
-                cluster_id,
-                df_segmented.copy()
-            )
-            st.session_state.cluster_descriptions_ai[f"Cluster {cluster_id}"] = description
+       st.session_state.cluster_descriptions_ai = generate_cluster_descriptions(
+            st.session_state.shap_values, 
+            st.session_state.X_test, 
+            st.session_state.feature_names
+        ) 
 
-    st.subheader("Generated Cluster Descriptions and Marketing Suggestions:")
-    for cluster, description in st.session_state.cluster_descriptions_ai.items():
-        st.markdown(f"**{cluster}:**")
-        st.write(description)
-
+        for cluster, description in st.session_state.cluster_descriptions_ai.items():
+            st.subheader(f"{cluster} Description")
+            st.write(description)
+        
     # Visualization options
     show_classification_report = st.checkbox("Show Classification Report")
     show_feature_importance = st.checkbox("Show Feature Importance Bar Plot")

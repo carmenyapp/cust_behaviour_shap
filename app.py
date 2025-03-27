@@ -152,6 +152,7 @@ if auto_determine_clusters and not st.session_state['n_clusters_determined']:
         st.warning("Could not determine optimal number of clusters. Using default (3).")
         st.session_state['n_clusters_value'] = 3
     st.session_state['n_clusters_determined'] = True
+    st.session_state['n_clusters_value'] = best_n_clusters
 elif not auto_determine_clusters:
     st.session_state['n_clusters_determined'] = False
     st.session_state['n_clusters_value'] = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)

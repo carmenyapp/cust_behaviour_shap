@@ -169,7 +169,7 @@ elif not auto_determine_clusters:
 if st.button("Segment and Analyze"):
     n_clusters_to_use = st.session_state['n_clusters_value']
     st.write(f"Using {n_clusters_to_use} clusters for segmentation.")
-    df_segmented = apply_kprototypes(df.copy(), categorical_cols, n_clusters)
+    df_segmented = apply_kprototypes(df.copy(), categorical_cols, n_clusters_to_use)
     st.session_state.segmented_df = df_segmented  # Save the segmented DataFrame
     st.session_state.clusters = sorted(df_segmented['Cluster'].unique())
 

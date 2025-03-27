@@ -51,11 +51,17 @@ def apply_kprototypes(df, categorical_cols, n_clusters):
     return df
     
 def generate_cluster_descriptions(shap_values, X_test, feature_names, num_clusters):
-    shap_values = np.array(shap_values)
+    if isinstance(shap_values, list):
+        shap_values = np.array(shap_values)
     X_test = np.array(X_test)
     
     # Calculate the absolute mean SHAP values for each feature
-    mean_abs_shap = np.abs(shap_values).mean(axis=0)
+    if shap_values.ndim == 3:
+        # Multiclass or multi-output case
+        mean_abs_shap = np.abs(shap_values).mean(axis=(0, 1))
+    else:
+        # Binary or single-output case
+        mean_abs_shap = np.abs(shap_values).mean(axis=0)
     
     # Get top features by importance
     top_feature_indices = mean_abs_shap.argsort()[::-1]
@@ -65,7 +71,10 @@ def generate_cluster_descriptions(shap_values, X_test, feature_names, num_cluste
     
     for cluster in range(num_clusters):
         # Select SHAP values for this cluster
-        cluster_shap = shap_values[cluster]
+        if shap_values.ndim == 3:
+            cluster_shap = shap_values[0, cluster, :]  # Adjust indexing as needed
+        else:
+            cluster_shap = shap_values[cluster]
         
         # Prepare description components
         top_positive_features = []
@@ -73,7 +82,11 @@ def generate_cluster_descriptions(shap_values, X_test, feature_names, num_cluste
         
         for idx in top_feature_indices[:5]:  # Top 5 features
             feature_name = feature_names[idx]
-            feature_shap_value = cluster_shap[idx]
+            try:
+                feature_shap_value = float(cluster_shap[idx])
+            except Exception as e:
+                print(f"Error processing feature {feature_name}: {e}")
+                continue
             
             if feature_shap_value > 0:
                 top_positive_features.append({

@@ -137,7 +137,7 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
     
     return shap_values, X_test, list(X.columns), y_test
     
-def generate_cluster_descriptions(shap_values, X_test, feature_names, num_clusters):
+def generate_cluster_descriptions(shap_values, X_test, feature_names, n_clusters):
     if isinstance(shap_values, list):
         shap_values = np.array(shap_values)
     if isinstance(X_test, list):
@@ -146,67 +146,84 @@ def generate_cluster_descriptions(shap_values, X_test, feature_names, num_cluste
     # Comprehensive cluster description dictionary
     cluster_descriptions = {}
     
-    for cluster in range(num_clusters):
-        # 1. Feature Importance Ranking
-        binary_shap = shap_values[:,:,cluster]
-        mean_abs_shap = np.abs(binary_shap).mean(axis=0)
-        feature_importance = pd.DataFrame({
-            'feature': feature_names,
-            'mean_abs_shap': mean_abs_shap
-        }).sort_values('mean_abs_shap', ascending=False)
-        
-        # 2. Feature Direction Analysis
-        mean_shap = binary_shap.mean(axis=0)
-        feature_direction = pd.DataFrame({
-            'feature': feature_names,
-            'mean_shap': mean_shap,
-            'direction': np.where(mean_shap > 0, 'Positive', 'Negative')
-        })
-        
-        # 3. Feature Distribution Within Cluster
-        feature_distribution = {}
-        for feature in feature_names:
-            feature_idx = feature_names.index(feature)
-            feature_shap_values = binary_shap[:, feature_idx]
-            feature_distribution[feature] = {
-                'mean': np.mean(feature_shap_values),
-                'median': np.median(feature_shap_values),
-                'std': np.std(feature_shap_values),
-                'range': (np.min(feature_shap_values), np.max(feature_shap_values)),
-                'percentiles': {
-                    '25th': np.percentile(feature_shap_values, 25),
-                    '75th': np.percentile(feature_shap_values, 75)
+    if len(shap_values.shape) == 2:
+        # If 2D, assume single cluster scenario
+        shap_values = shap_values[:, :, np.newaxis]
+    
+    # Ensure n_clusters doesn't exceed available clusters
+    max_clusters = shap_values.shape[2]
+    n_clusters = min(n_clusters, max_clusters)
+    
+    for cluster in range(n_clusters):
+        try:
+            # 1. Feature Importance Ranking
+            binary_shap = shap_values[:,:,cluster]
+            mean_abs_shap = np.abs(binary_shap).mean(axis=0)
+            feature_importance = pd.DataFrame({
+                'feature': feature_names,
+                'mean_abs_shap': mean_abs_shap
+            }).sort_values('mean_abs_shap', ascending=False)
+            
+            # 2. Feature Direction Analysis
+            mean_shap = binary_shap.mean(axis=0)
+            feature_direction = pd.DataFrame({
+                'feature': feature_names,
+                'mean_shap': mean_shap,
+                'direction': np.where(mean_shap > 0, 'Positive', 'Negative')
+            })
+            
+            # 3. Feature Distribution Within Cluster
+            feature_distribution = {}
+            for feature in feature_names:
+                feature_idx = feature_names.index(feature)
+                feature_shap_values = binary_shap[:, feature_idx]
+                feature_distribution[feature] = {
+                    'mean': float(np.mean(feature_shap_values)),
+                    'median': float(np.median(feature_shap_values)),
+                    'std': float(np.std(feature_shap_values)),
+                    'range': (float(np.min(feature_shap_values)), float(np.max(feature_shap_values))),
+                    'percentiles': {
+                        '25th': float(np.percentile(feature_shap_values, 25)),
+                        '75th': float(np.percentile(feature_shap_values, 75))
+                    }
                 }
-            }
-        
-        # Prepare comprehensive analysis for AI prompt
-        analysis_prompt = f"""
-        Cluster {cluster} Analysis:
+            
+            # Prepare comprehensive analysis for AI prompt
+            analysis_prompt = f"""
+            Cluster {cluster} Detailed Analysis:
 
-        Feature Importance Ranking:
-        {feature_importance.to_string()}
+            Feature Importance Ranking:
+            {feature_importance.to_string()}
 
-        Feature Direction Analysis:
-        {feature_direction.to_string()}
+            Feature Direction Analysis:
+            {feature_direction.to_string()}
 
-        Feature Distribution:
-        {json.dumps(feature_distribution, indent=2)}
+            Feature Distribution Details:
+            {json.dumps(feature_distribution, indent=2)}
 
-        Generate a comprehensive, insightful description of this customer cluster based on the above SHAP analysis. 
-        Focus on:
-        - Key distinguishing features
-        - Impact and direction of top features
-        - Unique characteristics that define this cluster
-        - Potential business insights or actionable strategies
+            Task: Generate a comprehensive, insightful description of this customer cluster based on the SHAP analysis. 
+            Provide a narrative that transforms these technical metrics into a meaningful, actionable cluster profile.
+
+            Focus on:
+            1. Key distinguishing features of this cluster
+            2. Impact and direction of top features
+            3. Unique characteristics that define this cluster
+            4. Potential business insights or actionable strategies
+
+            Your description should be:
+            - Concise (250-350 words)
+            - Data-driven
+            - Actionable
+            - Easy to understand for business stakeholders
+            """
+            
+            # Generate AI Description
+            cluster_description = generate_ai_cluster_description(analysis_prompt)
+            
+            cluster_descriptions[f'Cluster {cluster}'] = cluster_description
         
-        Provide a narrative that transforms these technical metrics into a meaningful, actionable cluster profile.
-        """
-        
-        # Use OpenAI or another LLM to generate description
-        # Replace this with your actual LLM API call
-        cluster_description = generate_ai_description(analysis_prompt)
-        
-        cluster_descriptions[f'Cluster {cluster}'] = cluster_description
+        except Exception as e:
+            cluster_descriptions[f'Cluster {cluster}'] = f"Error generating description for cluster {cluster}: {str(e)}"
     
     return cluster_descriptions
 

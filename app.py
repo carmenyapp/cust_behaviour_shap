@@ -92,6 +92,14 @@ def determine_optimal_clusters(df, categorical_cols):
         st.warning("Could not determine optimal number of clusters. Using default (3).")
         return 3
 
+def apply_kprototypes(df, categorical_cols, n_clusters):
+    # K-Prototypes clustering
+    kproto = KPrototypes(n_clusters=n_clusters, init='Huang', random_state=42)
+    categorical_indices = [df.columns.get_loc(col) for col in categorical_cols]
+    clusters = kproto.fit_predict(df, categorical=categorical_indices)
+    df['Cluster'] = clusters
+    return df
+    
 def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
     # Perform clustering
     df_segmented = apply_kprototypes(df.copy(), categorical_cols, n_clusters_to_use)
@@ -127,15 +135,6 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
         shap_values = explainer.shap_values(X_test)
     
     return shap_values, X_test, list(X.columns), y_test
-
-
-def apply_kprototypes(df, categorical_cols, n_clusters):
-    # K-Prototypes clustering
-    kproto = KPrototypes(n_clusters=n_clusters, init='Huang', random_state=42)
-    categorical_indices = [df.columns.get_loc(col) for col in categorical_cols]
-    clusters = kproto.fit_predict(df, categorical=categorical_indices)
-    df['Cluster'] = clusters
-    return df
     
 def generate_cluster_descriptions(shap_values, X_test, feature_names, num_clusters):
     if isinstance(shap_values, list):
@@ -146,236 +145,78 @@ def generate_cluster_descriptions(shap_values, X_test, feature_names, num_cluste
     # Comprehensive cluster description dictionary
     cluster_descriptions = {}
     
-    # Prepare SHAP analysis for each cluster
-    for cluster in range(num_clusters):
-        # Cluster-specific analysis
-        cluster_analysis = {
-            'feature_importance_ranking': [],
-            'feature_direction_analysis': [],
-            'feature_distribution': {},
-            'shap_value_summary': {
-                'overall_range': None,
-                'positive_impact_features': [],
-                'negative_impact_features': []
-            }
-        }
-        
-        # Handle different SHAP value dimensions
-        if shap_values.ndim == 3:
-            # Multiclass or multi-output case
-            cluster_shap = shap_values[0, cluster, :]
-        else:
-            # Binary or single-output case
-            cluster_shap = shap_values[cluster]
-        
+    for cluster in range(n_clusters):
         # 1. Feature Importance Ranking
-        mean_abs_shap = np.abs(cluster_shap)
-        top_feature_indices = mean_abs_shap.argsort()[::-1]
+        binary_shap = shap_values[:,:,cluster]
+        mean_abs_shap = np.abs(binary_shap).mean(axis=0)
+        feature_importance = pd.DataFrame({
+            'feature': feature_names,
+            'mean_abs_shap': mean_abs_shap
+        }).sort_values('mean_abs_shap', ascending=False)
         
-        for rank, idx in enumerate(top_feature_indices, 1):
-            feature_name = feature_names[idx]
-            abs_shap_value = mean_abs_shap[idx]
-            actual_shap_value = cluster_shap[idx]
-            
-            # Feature Importance Ranking
-            cluster_analysis['feature_importance_ranking'].append({
-                'rank': rank,
-                'feature': feature_name,
-                'abs_importance': abs_shap_value
-            })
-            
-            # Feature Direction Analysis
-            direction = 'Positive' if actual_shap_value > 0 else 'Negative'
-            cluster_analysis['feature_direction_analysis'].append({
-                'feature': feature_name,
-                'direction': direction,
-                'shap_value': actual_shap_value
-            })
-            
-            # Track overall impact
-            if actual_shap_value > 0:
-                cluster_analysis['shap_value_summary']['positive_impact_features'].append({
-                    'feature': feature_name,
-                    'value': actual_shap_value
-                })
-            else:
-                cluster_analysis['shap_value_summary']['negative_impact_features'].append({
-                    'feature': feature_name,
-                    'value': abs(actual_shap_value)
-                })
+        # 2. Feature Direction Analysis
+        mean_shap = binary_shap.mean(axis=0)
+        feature_direction = pd.DataFrame({
+            'feature': feature_names,
+            'mean_shap': mean_shap,
+            'direction': np.where(mean_shap > 0, 'Positive', 'Negative')
+        })
         
-        # 2. Feature Distribution Analysis
-        for feature_idx, feature_name in enumerate(feature_names):
-            feature_values = X_test[:, feature_idx]
-            feature_shap_values = cluster_shap[feature_idx]
-            
-            cluster_analysis['feature_distribution'][feature_name] = {
-                'mean': np.mean(feature_values),
-                'median': np.median(feature_values),
-                'std': np.std(feature_values),
-                'shap_mean': np.mean(feature_shap_values),
-                'shap_std': np.std(feature_shap_values)
+        # 3. Feature Distribution Within Cluster
+        feature_distribution = {}
+        for feature in feature_names:
+            feature_idx = feature_names.tolist().index(feature)
+            feature_shap_values = binary_shap[:, feature_idx]
+            feature_distribution[feature] = {
+                'mean': np.mean(feature_shap_values),
+                'median': np.median(feature_shap_values),
+                'std': np.std(feature_shap_values),
+                'range': (np.min(feature_shap_values), np.max(feature_shap_values)),
+                'percentiles': {
+                    '25th': np.percentile(feature_shap_values, 25),
+                    '75th': np.percentile(feature_shap_values, 75)
+                }
             }
         
-        # 3. SHAP Value Range Summary
-        cluster_analysis['shap_value_summary']['overall_range'] = {
-            'min': np.min(cluster_shap),
-            'max': np.max(cluster_shap),
-            'mean': np.mean(cluster_shap),
-            'std': np.std(cluster_shap)
-        }
+        # Prepare comprehensive analysis for AI prompt
+        analysis_prompt = f"""
+        Cluster {cluster} Analysis:
+
+        Feature Importance Ranking:
+        {feature_importance.to_string()}
+
+        Feature Direction Analysis:
+        {feature_direction.to_string()}
+
+        Feature Distribution:
+        {json.dumps(feature_distribution, indent=2)}
+
+        Generate a comprehensive, insightful description of this customer cluster based on the above SHAP analysis. 
+        Focus on:
+        - Key distinguishing features
+        - Impact and direction of top features
+        - Unique characteristics that define this cluster
+        - Potential business insights or actionable strategies
         
-        # Generate Narrative Description
-        description = generate_narrative_description(cluster_analysis)
+        Provide a narrative that transforms these technical metrics into a meaningful, actionable cluster profile.
+        """
         
-        # Store complete analysis
-        cluster_descriptions[f"Cluster {cluster}"] = {
-            'narrative': description,
-            'detailed_analysis': cluster_analysis
-        }
+        # Use OpenAI or another LLM to generate description
+        # Replace this with your actual LLM API call
+        cluster_description = generate_ai_description(analysis_prompt)
+        
+        cluster_descriptions[f'Cluster {cluster}'] = cluster_description
     
     return cluster_descriptions
 
-def generate_narrative_description(cluster_analysis):
-    # Top 3 most important features
-    top_features = cluster_analysis['feature_importance_ranking'][:3]
-    
-    # Positive and negative impact features
-    positive_features = cluster_analysis['shap_value_summary']['positive_impact_features']
-    negative_features = cluster_analysis['shap_value_summary']['negative_impact_features']
-    
-    # Construct narrative
-    narrative = f"""
-    Cluster Characteristics Analysis:
-    
-    Key Insights:
-    1. Most Influential Features:
-    {' | '.join([f"{feat['feature']} (Rank: {feat['rank']})" for feat in top_features])}
-    
-    2. Impact Direction:
-    Positive Impact Features: {', '.join([f['feature'] for f in positive_features[:3]])}
-    Negative Impact Features: {', '.join([f['feature'] for f in negative_features[:3]])}
-    
-    3. SHAP Value Dynamics:
-    - Overall SHAP Range: [{cluster_analysis['shap_value_summary']['overall_range']['min']:.4f}, {cluster_analysis['shap_value_summary']['overall_range']['max']:.4f}]
-    - Mean SHAP Value: {cluster_analysis['shap_value_summary']['overall_range']['mean']:.4f}
-    - SHAP Value Variability: {cluster_analysis['shap_value_summary']['overall_range']['std']:.4f}
-    
-    Interpretation:
-    This cluster demonstrates distinct characteristics driven by key features with significant predictive power. 
-    The analysis reveals nuanced interactions between features and their impact on the cluster's definition.
-    """
-    
-    return narrative
-
-def visualize_cluster_insights(cluster_descriptions):
-    """
-    Create visualizations for cluster insights.
-    
-    Args:
-        cluster_descriptions (dict): Comprehensive cluster descriptions
-    
-    Returns:
-        dict: Matplotlib figures for various visualizations
-    """
-    visualizations = {}
-    
-    for cluster, data in cluster_descriptions.items():
-        cluster_analysis = data['detailed_analysis']
-        
-        # 1. Feature Importance Bar Plot
-        plt.figure(figsize=(10, 6))
-        importance_data = cluster_analysis['feature_importance_ranking']
-        features = [item['feature'] for item in importance_data]
-        importances = [item['abs_importance'] for item in importance_data]
-        
-        plt.barh(features, importances)
-        plt.title(f'{cluster} - Feature Importance')
-        plt.xlabel('Absolute SHAP Value')
-        plt.tight_layout()
-        visualizations[f'{cluster}_feature_importance'] = plt.gcf()
-        plt.close()
-        
-        # 2. Feature Direction Analysis
-        plt.figure(figsize=(10, 6))
-        directions = cluster_analysis['feature_direction_analysis']
-        positive_features = [d['feature'] for d in directions if d['direction'] == 'Positive']
-        negative_features = [d['feature'] for d in directions if d['direction'] == 'Negative']
-        
-        plt.bar(positive_features, [d['shap_value'] for d in directions if d['direction'] == 'Positive'], color='green', label='Positive Impact')
-        plt.bar(negative_features, [-d['shap_value'] for d in directions if d['direction'] == 'Negative'], color='red', label='Negative Impact')
-        plt.title(f'{cluster} - Feature Impact Direction')
-        plt.xticks(rotation=45)
-        plt.legend()
-        plt.tight_layout()
-        visualizations[f'{cluster}_feature_direction'] = plt.gcf()
-        plt.close()
-    
-    return visualizations
-
-# Updated Streamlit Visualization Function
-def display_cluster_insights(cluster_descriptions):
-    """
-    Display cluster insights in Streamlit.
-    
-    Args:
-        cluster_descriptions (dict): Comprehensive cluster descriptions
-    """
-    for cluster, data in cluster_descriptions.items():
-        st.subheader(f"{cluster} Analysis")
-        
-        # Display Narrative
-        st.markdown(data['narrative'])
-        
-        # Expander for Detailed Analysis
-        with st.expander(f"Detailed {cluster} Insights"):
-            # Feature Importance Ranking
-            st.subheader("Feature Importance Ranking")
-            importance_df = pd.DataFrame(data['detailed_analysis']['feature_importance_ranking'])
-            st.dataframe(importance_df)
-            
-            # Feature Direction
-            st.subheader("Feature Impact Direction")
-            direction_df = pd.DataFrame(data['detailed_analysis']['feature_direction_analysis'])
-            st.dataframe(direction_df)
-    
-    # Visualizations
-    visualizations = visualize_cluster_insights(cluster_descriptions)
-    
-    # Display Visualizations
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("Feature Importance")
-        for fig_name, fig in visualizations.items():
-            if 'feature_importance' in fig_name:
-                st.pyplot(fig)
-    
-    with col2:
-        st.subheader("Feature Impact Direction")
-        for fig_name, fig in visualizations.items():
-            if 'feature_direction' in fig_name:
-                st.pyplot(fig)
-
-def generate_ai_description(positive_features, negative_features):
-    # Prepare the prompt
-    prompt = f"""Generate a concise and insightful description of a data cluster based on its most important features.
-
-    Positive Influential Features:
-    {', '.join([f"{f['name']} (impact: {f['impact']:.2f})" for f in positive_features])}
-    
-    Negative Influential Features:
-    {', '.join([f"{f['name']} (impact: {f['impact']:.2f})" for f in negative_features])}
-    
-    Description:"""
-
+def generate_ai_description(cluster_descriptions):
     try:
         # Use OpenAI API to generate description
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are an expert data analyst describing a cluster's characteristics."},
-                {"role": "user", "content": prompt}
+                {"role": "user", "content": cluster_descriptions}
             ],
             max_tokens=150,
             n=1,

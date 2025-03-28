@@ -109,14 +109,24 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
     # Calculate F1 Score
     f1 = f1_score(y_test, y_pred, average='weighted')
     st.write(f"F1 Score for K-Prototype: {f1:.4f}")
-    
+
     # SHAP Analysis
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
-    explainer = shap.TreeExplainer(model, model_output='raw')
-    shap_values = explainer.shap_values(X_test)
+    for cluster in df_segmented['Cluster'].unique():
+        df_segmented['binary_target'] = (df_segmented['Cluster'] == cluster).astype(int)
+            
+        # Features and target
+        X = df_segmented.drop(columns=['Cluster', 'binary_target'])
+        y = df_segmented['binary_target']
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+                
+        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+
+        explainer = shap.TreeExplainer(model, model_output='raw')
+        shap_values = explainer.shap_values(X_test)
     
-    return shap_values, X_test, list(X.columns), clf, y_test
+    return shap_values, X_test, list(X.columns), y_test
 
 
 def apply_kprototypes(df, categorical_cols, n_clusters):
@@ -285,7 +295,6 @@ if st.button("Segment and Analyze"):
         st.session_state['shap_values'], 
         st.session_state['X_test'], 
         st.session_state['feature_names'],
-        st.session_state['model'],
         st.session_state['y_test']
     ) = perform_clustering_analysis(df, categorical_cols, st.session_state['n_clusters_value'])
 
@@ -312,7 +321,7 @@ if st.session_state.get('cluster_descriptions_ai'):
 
     # Display Selected Visualizations
     if show_classification_report:
-        report = classification_report(y_test, y_pred, output_dict=True)
+        report = classification_report(st.session_state.y_test, st.session_state.y_pred, output_dict=True)
         report_df = pd.DataFrame(report).transpose()
         st.write("Classification Report:")
         st.table(report_df)

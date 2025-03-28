@@ -165,7 +165,7 @@ def generate_cluster_descriptions(shap_values, X_test, feature_names, num_cluste
         # 3. Feature Distribution Within Cluster
         feature_distribution = {}
         for feature in feature_names:
-            feature_idx = feature_names.tolist().index(feature)
+            feature_idx = feature_names.index(feature)
             feature_shap_values = binary_shap[:, feature_idx]
             feature_distribution[feature] = {
                 'mean': np.mean(feature_shap_values),

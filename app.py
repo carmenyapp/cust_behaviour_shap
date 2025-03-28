@@ -145,7 +145,7 @@ def generate_cluster_descriptions(shap_values, X_test, feature_names, num_cluste
     # Comprehensive cluster description dictionary
     cluster_descriptions = {}
     
-    for cluster in range(n_clusters):
+    for cluster in range(num_clusters):
         # 1. Feature Importance Ranking
         binary_shap = shap_values[:,:,cluster]
         mean_abs_shap = np.abs(binary_shap).mean(axis=0)

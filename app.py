@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, classification_report, silhouette_score
 import shap
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 import openai

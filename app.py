@@ -337,10 +337,10 @@ if st.button("Segment and Analyze"):
 # Display Results if Available
 if st.session_state.get('cluster_descriptions_ai'):
     # Display Cluster Descriptions
-    for cluster in sorted(st.session_state.cluster_descriptions_ai.items()):
+    for cluster, description in sorted(st.session_state.cluster_descriptions_ai.items()):
         st.subheader(f"{cluster} Description")
-        st.write(st.session_state.cluster_descriptions_ai[cluster])
-
+        st.write(description)
+        
     # Create Visualization Options
     show_classification_report = st.checkbox("Show Classification Report")
     show_shap_summary = st.checkbox("Show SHAP Summary Plot")

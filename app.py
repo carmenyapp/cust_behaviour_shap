@@ -212,7 +212,7 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
         
         Format your response with the cluster name first, followed by the description.
         """
-        st.write( 1. Feature Importance Ranking)
+        st.text("1. Feature Importance Ranking")
         # Generate AI Description
         full_response = generate_ai_description(analysis_prompt)
         

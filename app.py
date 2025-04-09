@@ -154,7 +154,7 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
             'feature': feature_names,
             'mean_abs_shap': mean_abs_shap
         }).sort_values('mean_abs_shap', ascending=False)
-        
+        st.text("1. Feature Importance Ranking")
         # 2. Feature Direction Analysis
         mean_shap = shap_values.mean(axis=0)
         feature_direction = pd.DataFrame({
@@ -162,7 +162,7 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
             'mean_shap': mean_shap,
             'direction': np.where(mean_shap > 0, 'Positive', 'Negative')
         })
-        
+        st.text("1. Feature Importance Ranking")
         # 3. Feature Distribution Within Cluster
         feature_distribution = {}
         for feature in feature_names:
@@ -340,7 +340,7 @@ if st.button("Segment and Analyze"):
         st.session_state.y_test, 
         st.session_state.y_pred
     )= perform_clustering_analysis(df, categorical_cols, st.session_state['n_clusters_value'])
-    st.write(st.session_state['shap_results'])
+
     # Generate cluster descriptions
     cluster_info = generate_clusters_description(st.session_state['shap_results'])
     st.session_state['cluster_descriptions_ai'] = cluster_info

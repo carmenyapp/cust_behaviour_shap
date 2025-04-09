@@ -218,7 +218,7 @@ def generate_cluster_descriptions(shap_values, X_test, feature_names, n_clusters
             """
             
             # Generate AI Description
-            cluster_description = generate_ai_cluster_description(analysis_prompt)
+            cluster_description = generate_ai_description(analysis_prompt)
             
             cluster_descriptions[f'Cluster {cluster}'] = cluster_description
         

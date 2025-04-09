@@ -148,16 +148,15 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
 def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_id):
     try:
         if len(shap_values.shape) > 2:
-            st.text("1.")
             shap_values = shap_values[:, :, 1]
-        st.text("1. Feature Importance Ranking")
+        
         # 1. Feature Importance Ranking
         mean_abs_shap = np.abs(shap_values).mean(axis=0)
         feature_importance = pd.DataFrame({
             'feature': feature_names,
             'mean_abs_shap': mean_abs_shap
         }).sort_values('mean_abs_shap', ascending=False)
-        st.text("1. Feature Importance Ranking")
+        
         # 2. Feature Direction Analysis
         mean_shap = shap_values.mean(axis=0)
         feature_direction = pd.DataFrame({
@@ -165,7 +164,7 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
             'mean_shap': mean_shap,
             'direction': np.where(mean_shap > 0, 'Positive', 'Negative')
         })
-        st.text("1. Feature Importance Ranking")
+        
         # 3. Feature Distribution Within Cluster
         feature_distribution = {}
         for feature in feature_names:
@@ -348,53 +347,53 @@ if st.button("Segment and Analyze"):
     cluster_info = generate_clusters_description(st.session_state['shap_results'])
     st.session_state['cluster_descriptions_ai'] = cluster_info
     
-# Display Results if Available
-if st.session_state.get('cluster_descriptions_ai'):
-    # Display Cluster Descriptions
-    for cluster_id, info in cluster_info.items():
-        # Check if info is a dictionary (expected structure)
-        if isinstance(info, dict) and 'name' in info and 'description' in info:
-            st.subheader(f"Cluster {cluster_id}: {info['name']}")
-            st.write(info['description'])
-        # If info is a string (error case or unexpected format)
-        elif isinstance(info, str):
-            st.subheader(f"Cluster {cluster_id}")
-            st.write(info)
-        # Fallback for any other unexpected structure
-        else:
-            st.subheader(f"Cluster {cluster_id}")
-            st.write("Error: Unable to display cluster information in expected format.")
-            st.write(info)
+    # Display Results if Available
+    if st.session_state.get('cluster_descriptions_ai'):
+        # Display Cluster Descriptions
+        for cluster_id, info in cluster_info.items():
+            # Check if info is a dictionary (expected structure)
+            if isinstance(info, dict) and 'name' in info and 'description' in info:
+                st.subheader(f"Cluster {cluster_id}: {info['name']}")
+                st.write(info['description'])
+            # If info is a string (error case or unexpected format)
+            elif isinstance(info, str):
+                st.subheader(f"Cluster {cluster_id}")
+                st.write(info)
+            # Fallback for any other unexpected structure
+            else:
+                st.subheader(f"Cluster {cluster_id}")
+                st.write("Error: Unable to display cluster information in expected format.")
+                st.write(info)
+            
+        st.sidebar.subheader("Visualization Options")
+        show_classification_report = st.sidebar.checkbox("Show Classification Report")
+        show_shap_summary = st.sidebar.checkbox("Show SHAP Summary Plot")
         
-    st.sidebar.subheader("Visualization Options")
-    show_classification_report = st.sidebar.checkbox("Show Classification Report")
-    show_shap_summary = st.sidebar.checkbox("Show SHAP Summary Plot")
+        # Display Selected Visualizations
+        if show_classification_report:
+            report = classification_report(st.session_state.y_test, st.session_state.y_pred, output_dict=True)
+            report_df = pd.DataFrame(report).transpose()
+            st.write("Clustering Result Classification Report:")
+            st.table(report_df)
     
-    # Display Selected Visualizations
-    if show_classification_report:
-        report = classification_report(st.session_state.y_test, st.session_state.y_pred, output_dict=True)
-        report_df = pd.DataFrame(report).transpose()
-        st.write("Clustering Result Classification Report:")
-        st.table(report_df)
-
-    if show_shap_summary:
-        st.subheader("SHAP Summary Plots by Cluster")
-
-        for cluster_id, result in st.session_state['shap_results'].items():
-            st.markdown(f"### Cluster {cluster_id}")
-        
-            fig = plt.figure(figsize=(12, 8))
-            shap.summary_plot(
-                result['shap_values'][1],  
-                result['X_test'],
-                feature_names=result['feature_names'],
-                max_display=25,
-                plot_type="dot",
-                show=False
-            )
-            plt.tight_layout()
-            st.pyplot(plt.gcf())
-            plt.close()
-
-    # AI Message Generator
-    ai_message_generator(st.session_state['cluster_descriptions_ai'])
+        if show_shap_summary:
+            st.subheader("SHAP Summary Plots by Cluster")
+    
+            for cluster_id, result in st.session_state['shap_results'].items():
+                st.markdown(f"### Cluster {cluster_id}")
+            
+                fig = plt.figure(figsize=(12, 8))
+                shap.summary_plot(
+                    result['shap_values'][1],  
+                    result['X_test'],
+                    feature_names=result['feature_names'],
+                    max_display=25,
+                    plot_type="dot",
+                    show=False
+                )
+                plt.tight_layout()
+                st.pyplot(plt.gcf())
+                plt.close()
+    
+        # AI Message Generator
+        ai_message_generator(st.session_state['cluster_descriptions_ai'])

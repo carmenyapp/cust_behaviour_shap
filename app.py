@@ -324,14 +324,18 @@ if st.button("Segment and Analyze"):
     # Generate cluster descriptions
     cluster_descriptions = {}
 
-    for cluster_id, result in st.session_state['shap_results'].items():
-        description_dict = generate_cluster_descriptions(
-            result['shap_values'],
-            result['X_test'],
-            result['feature_names'],
-            n_clusters=1  # just 1 cluster per call since each model is binary for one cluster
+    for cluster_id in st.session_state['shap_results'].keys():
+        result = st.session_state['shap_results'][cluster_id]
+        
+        description = generate_cluster_descriptions(
+            result['shap_values'],  
+            result['X_test'],       
+            result['feature_names'], 
+            1                     
         )
-        cluster_descriptions.update(description_dict)
+
+        cluster_description = list(description.values())[0]
+        cluster_descriptions[cluster_id] = cluster_description    
     st.session_state['cluster_descriptions_ai'] = cluster_descriptions
 
 # Display Results if Available

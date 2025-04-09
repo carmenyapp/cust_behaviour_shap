@@ -347,9 +347,18 @@ if st.button("Segment and Analyze"):
 # Display Results if Available
 if st.session_state.get('cluster_descriptions_ai'):
     # Display Cluster Descriptions
-    for cluster_id, info in cluster_info.items():
-        st.subheader(info['name'])
-        st.write(info['description'])
+    if isinstance(info, dict) and 'name' in info and 'description' in info:
+            st.subheader(f"Cluster {cluster_id}: {info['name']}")
+            st.write(info['description'])
+        # If info is a string (error case or unexpected format)
+        elif isinstance(info, str):
+            st.subheader(f"Cluster {cluster_id}")
+            st.write(info)
+        # Fallback for any other unexpected structure
+        else:
+            st.subheader(f"Cluster {cluster_id}")
+            st.write("Error: Unable to display cluster information in expected format.")
+            st.write(info)
         
     st.sidebar.subheader("Visualization Options")
     show_classification_report = st.sidebar.checkbox("Show Classification Report")

@@ -154,6 +154,7 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
             'mean_abs_shap': mean_abs_shap
         }).sort_values('mean_abs_shap', ascending=False)
         
+        st.write( 1. Feature Importance Ranking)
         # 2. Feature Direction Analysis
         mean_shap = shap_values.mean(axis=0)
         feature_direction = pd.DataFrame({
@@ -161,7 +162,7 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
             'mean_shap': mean_shap,
             'direction': np.where(mean_shap > 0, 'Positive', 'Negative')
         })
-        
+        st.write( 1. Feature Importance Ranking)
         # 3. Feature Distribution Within Cluster
         feature_distribution = {}
         for feature in feature_names:
@@ -177,7 +178,7 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
                     '75th': float(np.percentile(feature_shap_values, 75))
                 }
             }
-        
+        st.write( 1. Feature Importance Ranking)
         # Prepare comprehensive analysis for AI prompt
         analysis_prompt = f"""
         Cluster {cluster_id} Detailed Analysis:
@@ -211,7 +212,7 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
         
         Format your response with the cluster name first, followed by the description.
         """
-        
+        st.write( 1. Feature Importance Ranking)
         # Generate AI Description
         full_response = generate_ai_description(analysis_prompt)
         

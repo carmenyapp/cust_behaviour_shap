@@ -340,7 +340,7 @@ if st.button("Segment and Analyze"):
         st.session_state.y_test, 
         st.session_state.y_pred
     )= perform_clustering_analysis(df, categorical_cols, st.session_state['n_clusters_value'])
-
+    st.write(st.session_state['shap_results'])
     # Generate cluster descriptions
     cluster_info = generate_clusters_description(st.session_state['shap_results'])
     st.session_state['cluster_descriptions_ai'] = cluster_info

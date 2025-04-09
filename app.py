@@ -384,7 +384,7 @@ if st.session_state.get('cluster_descriptions_ai'):
         
             fig = plt.figure(figsize=(12, 8))
             shap.summary_plot(
-                result['shap_values'][1],  
+                result['shap_values'][:, :, 1],  
                 result['X_test'],
                 feature_names=result['feature_names'],
                 max_display=25,

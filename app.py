@@ -348,7 +348,7 @@ if st.button("Segment and Analyze"):
 if st.session_state.get('cluster_descriptions_ai'):
     # Display Cluster Descriptions
     for cluster_id, info in cluster_info.items():
-        st.subheader(f"Cluster {cluster_id}: {info['name']}")
+        st.subheader(info['name'])
         st.write(info['description'])
         
     st.sidebar.subheader("Visualization Options")

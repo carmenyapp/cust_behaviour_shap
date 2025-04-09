@@ -147,6 +147,9 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
 
 def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_id):
     try:
+        if len(shap_values.shape) > 2:
+            st.text("1.")
+            shap_values = shap_values[:, :, 1]
         st.text("1. Feature Importance Ranking")
         # 1. Feature Importance Ranking
         mean_abs_shap = np.abs(shap_values).mean(axis=0)

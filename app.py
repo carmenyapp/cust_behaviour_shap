@@ -332,7 +332,6 @@ if st.button("Segment and Analyze"):
             cluster_id  # or use n_clusters_value if needed inside
         )
         cluster_descriptions[cluster_id] = description
-    
     st.session_state['cluster_descriptions_ai'] = cluster_descriptions
 
 # Display Results if Available

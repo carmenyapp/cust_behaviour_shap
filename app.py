@@ -106,17 +106,17 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
     df_segmented = apply_kprototypes(df.copy(), categorical_cols, n_clusters_to_use)
     
     # Prepare data for model training
-    X = df_segmented.drop('Cluster', axis=1)
-    y = df_segmented['Cluster']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    aX = df_segmented.drop('Cluster', axis=1)
+    ay = df_segmented['Cluster']
+    aX_train, aX_test, ay_train, ay_test = train_test_split(aX, ay, test_size=0.2, random_state=42)
     
     # Train classifier
     clf = RandomForestClassifier(random_state=42)
-    clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_test)
+    clf.fit(aX_train, ay_train)
+    ay_pred = clf.predict(aX_test)
     
     # Calculate F1 Score
-    f1 = f1_score(y_test, y_pred, average='weighted')
+    f1 = f1_score(ay_test, ay_pred, average='weighted')
     st.write(f"F1 Score for K-Prototype: {f1:.4f}")
 
     # SHAP Analysis
@@ -134,8 +134,15 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
 
         explainer = shap.TreeExplainer(model, model_output='raw')
         shap_values = explainer.shap_values(X_test)
-    
-    return shap_values, X_test, list(X.columns), y_test
+
+        shap_results[cluster] = {
+            'shap_values': shap_values,
+            'X_test': X_test,
+            'feature_names': list(X.columns),
+            'y_test': y_test
+        }
+
+    return shap_results, ay_test, ay_pred
     
 def generate_cluster_descriptions(shap_values, X_test, feature_names, n_clusters):
     if isinstance(shap_values, list):
@@ -308,19 +315,24 @@ elif not auto_determine_clusters:
 if st.button("Segment and Analyze"):
     # Perform clustering & shap analysis
     (
-        st.session_state['shap_values'], 
-        st.session_state['X_test'], 
-        st.session_state['feature_names'],
-        st.session_state['y_test']
-    ) = perform_clustering_analysis(df, categorical_cols, st.session_state['n_clusters_value'])
+        st.session_state['shap_results'], 
+        st.session_state.y_test, 
+        st.session_state.y_pred
+    )= perform_clustering_analysis(df, categorical_cols, st.session_state['n_clusters_value'])
 
     # Generate cluster descriptions
-    st.session_state['cluster_descriptions_ai'] = generate_cluster_descriptions(
-        st.session_state['shap_values'], 
-        st.session_state['X_test'], 
-        st.session_state['feature_names'],
-        st.session_state['n_clusters_value']
-    )
+    cluster_descriptions = {}
+
+    for cluster_id, result in st.session_state['shap_results'].items():
+        description = generate_cluster_descriptions(
+            result['shap_values'],
+            result['X_test'],
+            result['feature_names'],
+            cluster_id  # or use n_clusters_value if needed inside
+        )
+        cluster_descriptions[cluster_id] = description
+    
+    st.session_state['cluster_descriptions_ai'] = cluster_descriptions
 
 # Display Results if Available
 if st.session_state.get('cluster_descriptions_ai'):
@@ -331,63 +343,33 @@ if st.session_state.get('cluster_descriptions_ai'):
 
     # Create Visualization Options
     show_classification_report = st.checkbox("Show Classification Report")
-    show_feature_importance = st.checkbox("Show Feature Importance Bar Plot")
     show_shap_summary = st.checkbox("Show SHAP Summary Plot")
-    show_shap_dependence = st.checkbox("Show SHAP Dependence Plot")
-
+    
     # Display Selected Visualizations
     if show_classification_report:
         report = classification_report(st.session_state.y_test, st.session_state.y_pred, output_dict=True)
         report_df = pd.DataFrame(report).transpose()
-        st.write("Classification Report:")
+        st.write("Clustering Result Classification Report:")
         st.table(report_df)
 
-    if show_feature_importance:
-        mean_shap = np.abs(st.session_state.shap_values[:,:,1]).mean(axis=0)
-        st.subheader("Feature Importance")
-        feature_importance = pd.DataFrame(mean_shap, index=st.session_state.feature_names, columns=['SHAP Value'])
-        feature_importance = feature_importance.sort_values('SHAP Value', ascending=True)
-
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.barh(range(len(feature_importance)), feature_importance['SHAP Value'])
-        ax.set_yticks(range(len(feature_importance)))
-        ax.set_yticklabels(feature_importance.index)
-        ax.set_xlabel('mean(|SHAP value|)')
-        ax.set_title('Feature Importance')
-        st.pyplot(fig)
-        plt.close()
-
     if show_shap_summary:
-        st.subheader("SHAP Summary Plot")
-        fig = plt.figure(figsize=(12, 8))
-        shap.summary_plot(
-            st.session_state.shap_values[:,:,1],
-            st.session_state.X_test,
-            feature_names=st.session_state.feature_names,
-            max_display=25,
-            plot_type="dot",
-            show=False
-        )
-        plt.tight_layout()
-        st.pyplot(plt.gcf())
-        plt.close()
+        st.subheader("SHAP Summary Plots by Cluster")
 
-    if show_shap_dependence:
-        mean_shap = np.abs(st.session_state.shap_values[:,:,1]).mean(axis=0)
-        top_feature_idx = np.argmax(mean_shap)
-        top_feature_name = st.session_state.feature_names[top_feature_idx]
-        st.subheader(f"SHAP Dependence Plot - {top_feature_name}")
-        fig_dep, ax_dep = plt.subplots(figsize=(12, 8))
-        shap.dependence_plot(
-            top_feature_idx,
-            st.session_state.shap_values[:,:,1],
-            st.session_state.X_test,
-            feature_names=st.session_state.feature_names,
-            show=False,
-            ax=ax_dep
-        )
-        st.pyplot(fig_dep)
-        plt.close()
+        for cluster_id, result in st.session_state['shap_results'].items():
+            st.markdown(f"### Cluster {cluster_id}")
+        
+            fig = plt.figure(figsize=(12, 8))
+            shap.summary_plot(
+                result['shap_values'][1],  
+                result['X_test'],
+                feature_names=result['feature_names'],
+                max_display=25,
+                plot_type="dot",
+                show=False
+            )
+            plt.tight_layout()
+            st.pyplot(plt.gcf())
+            plt.close()
 
     # AI Message Generator
     ai_message_generator(st.session_state['cluster_descriptions_ai'])

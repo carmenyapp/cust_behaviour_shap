@@ -244,7 +244,7 @@ def generate_clusters_description(shap_results):
     cluster_info = {}
     
     for cluster_id, result in shap_results.items():
-        info = generate_cluster_description(
+        info = cluster_descriptions_generator(
             result['shap_values'],
             result['X_test'],
             result['feature_names'],

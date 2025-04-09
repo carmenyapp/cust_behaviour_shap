@@ -120,6 +120,7 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
     st.write(f"F1 Score for K-Prototype: {f1:.4f}")
 
     # SHAP Analysis
+    shap_results = {}
     for cluster in df_segmented['Cluster'].unique():
         df_segmented['binary_target'] = (df_segmented['Cluster'] == cluster).astype(int)
             

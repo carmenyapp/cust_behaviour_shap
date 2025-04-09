@@ -144,96 +144,115 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
         }
 
     return shap_results, ay_test, ay_pred
-    
-def generate_cluster_descriptions(shap_values, X_test, feature_names, n_clusters):
-    if isinstance(shap_values, list):
-        shap_values = np.array(shap_values)
-    if isinstance(X_test, list):
-        X_test = np.array(X_test)
-    
-    # Comprehensive cluster description dictionary
-    cluster_descriptions = {}
-    
-    if len(shap_values.shape) == 2:
-        # If 2D, assume single cluster scenario
-        shap_values = shap_values[:, :, np.newaxis]
-    
-    # Ensure n_clusters doesn't exceed available clusters
-    max_clusters = shap_values.shape[2]
-    n_clusters = min(n_clusters, max_clusters)
-    
-    for cluster in range(n_clusters):
-        try:
-            # 1. Feature Importance Ranking
-            binary_shap = shap_values[:,:,cluster]
-            mean_abs_shap = np.abs(binary_shap).mean(axis=0)
-            feature_importance = pd.DataFrame({
-                'feature': feature_names,
-                'mean_abs_shap': mean_abs_shap
-            }).sort_values('mean_abs_shap', ascending=False)
-            
-            # 2. Feature Direction Analysis
-            mean_shap = binary_shap.mean(axis=0)
-            feature_direction = pd.DataFrame({
-                'feature': feature_names,
-                'mean_shap': mean_shap,
-                'direction': np.where(mean_shap > 0, 'Positive', 'Negative')
-            })
-            
-            # 3. Feature Distribution Within Cluster
-            feature_distribution = {}
-            for feature in feature_names:
-                feature_idx = feature_names.index(feature)
-                feature_shap_values = binary_shap[:, feature_idx]
-                feature_distribution[feature] = {
-                    'mean': float(np.mean(feature_shap_values)),
-                    'median': float(np.median(feature_shap_values)),
-                    'std': float(np.std(feature_shap_values)),
-                    'range': (float(np.min(feature_shap_values)), float(np.max(feature_shap_values))),
-                    'percentiles': {
-                        '25th': float(np.percentile(feature_shap_values, 25)),
-                        '75th': float(np.percentile(feature_shap_values, 75))
-                    }
-                }
-            
-            # Prepare comprehensive analysis for AI prompt
-            analysis_prompt = f"""
-            Cluster {cluster} Detailed Analysis:
 
-            Feature Importance Ranking:
-            {feature_importance.to_string()}
-
-            Feature Direction Analysis:
-            {feature_direction.to_string()}
-
-            Feature Distribution Details:
-            {json.dumps(feature_distribution, indent=2)}
-
-            Task: Generate a comprehensive, insightful description of this customer cluster based on the SHAP analysis. 
-            Provide a narrative that transforms these technical metrics into a meaningful, actionable cluster profile.
-
-            Focus on:
-            1. Key distinguishing features of this cluster
-            2. Impact and direction of top features
-            3. Unique characteristics that define this cluster
-            4. Potential business insights or actionable strategies
-
-            Your description should be:
-            - Concise (250-350 words)
-            - Data-driven
-            - Actionable
-            - Easy to understand for business stakeholders
-            """
-            
-            # Generate AI Description
-            cluster_description = generate_ai_description(analysis_prompt)
-            
-            cluster_descriptions[f'Cluster {cluster}'] = cluster_description
+def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_id):
+    try:
+        # 1. Feature Importance Ranking
+        mean_abs_shap = np.abs(shap_values).mean(axis=0)
+        feature_importance = pd.DataFrame({
+            'feature': feature_names,
+            'mean_abs_shap': mean_abs_shap
+        }).sort_values('mean_abs_shap', ascending=False)
         
-        except Exception as e:
-            cluster_descriptions[f'Cluster {cluster}'] = f"Error generating description for cluster {cluster}: {str(e)}"
+        # 2. Feature Direction Analysis
+        mean_shap = shap_values.mean(axis=0)
+        feature_direction = pd.DataFrame({
+            'feature': feature_names,
+            'mean_shap': mean_shap,
+            'direction': np.where(mean_shap > 0, 'Positive', 'Negative')
+        })
+        
+        # 3. Feature Distribution Within Cluster
+        feature_distribution = {}
+        for feature in feature_names:
+            feature_idx = feature_names.index(feature)
+            feature_shap_values = shap_values[:, feature_idx]
+            feature_distribution[feature] = {
+                'mean': float(np.mean(feature_shap_values)),
+                'median': float(np.median(feature_shap_values)),
+                'std': float(np.std(feature_shap_values)),
+                'range': (float(np.min(feature_shap_values)), float(np.max(feature_shap_values))),
+                'percentiles': {
+                    '25th': float(np.percentile(feature_shap_values, 25)),
+                    '75th': float(np.percentile(feature_shap_values, 75))
+                }
+            }
+        
+        # Prepare comprehensive analysis for AI prompt
+        analysis_prompt = f"""
+        Cluster {cluster_id} Detailed Analysis:
+        
+        Feature Importance Ranking:
+        {feature_importance.to_string()}
+        
+        Feature Direction Analysis:
+        {feature_direction.to_string()}
+        
+        Feature Distribution Details:
+        {json.dumps(feature_distribution, indent=2)}
+        
+        Task: Based on the SHAP analysis above, complete the following two tasks:
+        
+        TASK 1: Create a succinct, descriptive cluster name (3-6 words) that captures the essence of this customer segment.
+        The name should:
+        - Be based on the most influential features and their directions
+        - Be memorable and business-relevant
+        - Avoid generic labels like "High Value Customers" unless truly fitting
+        - Format the name exactly as: "CLUSTER_NAME: YourDescriptiveName"
+        
+        TASK 2: Generate a comprehensive, insightful description of this customer cluster.
+        The description should:
+        - Explain the impact and direction of top features
+        - Highlight unique characteristics that define this cluster
+        - Suggest potential business insights or actionable strategies
+        - Be concise (less than 350 words)
+        - Be data-driven and actionable
+        - Be easy to understand for business stakeholders
+        
+        Format your response with the cluster name first, followed by the description.
+        """
+        
+        # Generate AI Description
+        full_response = generate_ai_description(analysis_prompt)
+        
+        # Parse the response to separate name and description
+        # Assuming format: "CLUSTER_NAME: Name\n\nDescription..."
+        try:
+            name_line, description = full_response.split('\n\n', 1)
+            if 'CLUSTER_NAME:' in name_line:
+                cluster_name = name_line.replace('CLUSTER_NAME:', '').strip()
+            else:
+                # If format not followed, use the first line as name
+                cluster_name = name_line.strip()
+        except ValueError:
+            # If splitting fails, use the whole response as description
+            # and generate a generic name
+            description = full_response
+            top_feature = feature_importance.iloc[0]['feature']
+            top_direction = feature_direction[feature_direction['feature'] == top_feature]['direction'].values[0]
+            cluster_name = f"{top_direction} {top_feature} Cluster"
+        
+        return {
+            'name': cluster_name,
+            'description': description
+        }
+        
+    except Exception as e:
+        return f"Error generating description for cluster {cluster_id}: {str(e)}"
+
+def generate_clusters_description(shap_results):
+    cluster_info = {}
     
-    return cluster_descriptions
+    for cluster_id, result in shap_results.items():
+        info = generate_cluster_description(
+            result['shap_values'],
+            result['X_test'],
+            result['feature_names'],
+            cluster_id
+        )
+        cluster_info[cluster_id] = info
+    
+    return cluster_info
 
 def generate_ai_description(cluster_descriptions):
     try:
@@ -322,32 +341,19 @@ if st.button("Segment and Analyze"):
     )= perform_clustering_analysis(df, categorical_cols, st.session_state['n_clusters_value'])
 
     # Generate cluster descriptions
-    cluster_descriptions = {}
-
-    for cluster_id in st.session_state['shap_results'].keys():
-        result = st.session_state['shap_results'][cluster_id]
-        
-        description = generate_cluster_descriptions(
-            result['shap_values'],  
-            result['X_test'],       
-            result['feature_names'], 
-            1                     
-        )
-
-        cluster_description = list(description.values())[0]
-        cluster_descriptions[cluster_id] = cluster_description    
-    st.session_state['cluster_descriptions_ai'] = cluster_descriptions
-
+    cluster_info = generate_clusters_description(st.session_state['shap_results'])
+    st.session_state['cluster_descriptions_ai'] = cluster_info
+    
 # Display Results if Available
 if st.session_state.get('cluster_descriptions_ai'):
     # Display Cluster Descriptions
-    for cluster, description in sorted(st.session_state.cluster_descriptions_ai.items()):
-        st.subheader(f"{cluster} Description")
-        st.write(description)
+    for cluster_id, info in cluster_info.items():
+        st.subheader(f"Cluster {cluster_id}: {info['name']}")
+        st.write(info['description'])
         
-    # Create Visualization Options
-    show_classification_report = st.checkbox("Show Classification Report")
-    show_shap_summary = st.checkbox("Show SHAP Summary Plot")
+    st.sidebar.subheader("Visualization Options")
+    show_classification_report = st.sidebar.checkbox("Show Classification Report")
+    show_shap_summary = st.sidebar.checkbox("Show SHAP Summary Plot")
     
     # Display Selected Visualizations
     if show_classification_report:

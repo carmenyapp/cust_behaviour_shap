@@ -347,7 +347,9 @@ if st.button("Segment and Analyze"):
 # Display Results if Available
 if st.session_state.get('cluster_descriptions_ai'):
     # Display Cluster Descriptions
-    if isinstance(info, dict) and 'name' in info and 'description' in info:
+    for cluster_id, info in cluster_info.items():
+        # Check if info is a dictionary (expected structure)
+        if isinstance(info, dict) and 'name' in info and 'description' in info:
             st.subheader(f"Cluster {cluster_id}: {info['name']}")
             st.write(info['description'])
         # If info is a string (error case or unexpected format)

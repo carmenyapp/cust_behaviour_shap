@@ -255,7 +255,7 @@ def generate_clusters_description(shap_results):
         )
         cluster_info[cluster_id] = info
     
-    return cluster_info
+    return sorted(cluster_info)
 
 def generate_ai_description(cluster_descriptions):
     try:
@@ -325,13 +325,13 @@ df, categorical_cols = load_data()
 st.title("AI Message Generation from Customer Analysis")
 
 st.subheader("Cluster Number Selection")
-auto_determine_clusters = st.checkbox("Automatically determine the number of clusters (within 3-6)?")
+manual_n_clusterd = st.checkbox("Manually determine the number of clusters (within 3-6)?")
 
-if auto_determine_clusters and not st.session_state['n_clusters_determined']:
+if not manual_n_clusterd and st.session_state['n_clusters_determined']:
     best_n_clusters = determine_optimal_clusters(df, categorical_cols)
     st.session_state['n_clusters_value'] = best_n_clusters
     st.session_state['n_clusters_determined'] = True
-elif not auto_determine_clusters:
+elif manual_n_clusterd:
     st.session_state['n_clusters_determined'] = False
     st.session_state['n_clusters_value'] = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
      

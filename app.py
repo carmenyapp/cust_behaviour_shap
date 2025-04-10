@@ -302,7 +302,7 @@ def generate_ai_message(cluster_description, user_name, user_case):
 
 def ai_message_generator(cluster_descriptions):
     st.subheader("AI Message Generator")
-    selected_cluster_ai = st.selectbox("Select a Cluster for Message Generation:", list(sorted(cluster_descriptions.keys()))
+    selected_cluster_ai = st.selectbox("Select a Cluster for Message Generation:", list(sorted(cluster_descriptions.keys())))
     user_name_ai = st.text_input("User Name (Optional):")
     user_case_ai = st.text_area("Enter your requirement for the marketing message:")
 

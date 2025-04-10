@@ -348,6 +348,7 @@ if st.button("Segment and Analyze"):
     
 # Display Results if Available
 if st.session_state.get('cluster_descriptions_ai'):
+    st.write(type(st.session_state['cluster_descriptions_ai']))
     # Display Cluster Descriptions
     for cluster_id, info in st.session_state['cluster_descriptions_ai'].items():
         # Check if info is a dictionary (expected structure)

@@ -254,7 +254,7 @@ def generate_clusters_description(shap_results):
         )
         cluster_info[cluster_id] = info
     
-    return sorted(cluster_info)
+    return cluster_info
 
 def generate_ai_description(cluster_descriptions):
     try:
@@ -348,14 +348,13 @@ if st.button("Segment and Analyze"):
     
 # Display Results if Available
 if st.session_state.get('cluster_descriptions_ai'):
-    st.write(type(st.session_state['cluster_descriptions_ai']))
+    sorted_cluster_ids = sorted(st.session_state['cluster_description_ai'].keys())
     # Display Cluster Descriptions
-    for cluster_id, info in st.session_state['cluster_descriptions_ai'].items():
-        # Check if info is a dictionary (expected structure)
+    for cluster_id in sorted_cluster_ids:
+        info = st.session_state['cluster_descriptions_ai'][cluster_id]
         if isinstance(info, dict) and 'name' in info and 'description' in info:
             st.subheader(f"Cluster {cluster_id}: {info['name']}")
             st.write(info['description'])
-        # If info is a string (error case or unexpected format)
         elif isinstance(info, str):
             st.subheader(f"Cluster {cluster_id}")
             st.write(info)

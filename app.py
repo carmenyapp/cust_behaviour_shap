@@ -183,36 +183,48 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
         
         # Prepare comprehensive analysis for AI prompt
         analysis_prompt = f"""
-        Cluster {cluster_id} Detailed Analysis:
+        Cluster {cluster_id} SHAP-Based Customer Segment Analysis
         
-        Feature Importance Ranking:
-        {feature_importance.to_string()}
+        --- FEATURE INSIGHTS ---
         
-        Feature Direction Analysis:
-        {feature_direction.to_string()}
+        Top Feature Importance (mean absolute SHAP values):
+        {feature_importance.to_string(index=False)}
         
-        Feature Distribution Details:
+        Top Feature Directions (mean SHAP values):
+        {feature_direction.to_string(index=False)}
+        
+        Feature Distribution Summary (SHAP values):
         {json.dumps(feature_distribution, indent=2)}
         
-        Task: Based on the SHAP analysis above, complete the following two tasks:
+        --- TASK INSTRUCTIONS ---
         
-        TASK 1: Create a succinct, descriptive cluster name (3-6 words) that captures the essence of this customer segment.
-        The name should:
-        - Be based on the most influential features and their directions
-        - Be memorable and business-relevant
-        - Avoid generic labels like "High Value Customers" unless truly fitting
-        - Format the name exactly as: "CLUSTER_NAME: YourDescriptiveName"
+        You are a business analyst AI assistant. Based on the SHAP analysis above, complete the two tasks below.
         
-        TASK 2: Generate a comprehensive, insightful description of this customer cluster.
-        The description should:
-        - Explain the impact and direction of top features
-        - Highlight unique characteristics that define this cluster
-        - Suggest potential business insights or actionable strategies
-        - Be concise (less than 350 words)
-        - Be data-driven and actionable
-        - Be easy to understand for business stakeholders
+        ### TASK 1: CLUSTER NAME
+        Generate a short, descriptive cluster name (3–6 words) that captures the essence of this customer segment.
         
-        Format your response with the cluster name first, followed by the description.
+        **Requirements:**
+        - Reflect key impactful features and their directions
+        - Be catchy, business-relevant, and unique
+        - Avoid generic terms unless truly applicable
+        - Format the name on its own line, exactly like this:
+        `CLUSTER_NAME: Your Descriptive Name`
+        
+        ### TASK 2: CLUSTER DESCRIPTION
+        Generate a concise, professional description of the cluster. 
+        
+        **Requirements:**
+        - Length: < 350 words
+        - Style: Business-friendly and insightful
+        - Must explain:
+          - What defines this cluster (key traits)
+          - How top features shape behavior (direction & impact)
+          - Business insights or strategies for engagement
+        - Format: Start right after the name on a new paragraph.
+        
+        ### FORMAT REQUIREMENTS:
+        Return your response **exactly** as follows:
+        Do not include any extra explanation or commentary.
         """
         
         # Generate AI Description
@@ -221,20 +233,24 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
         # Parse the response to separate name and description
         # Assuming format: "CLUSTER_NAME: Name\n\nDescription..."
         try:
-            name_line, description = full_response.split('\n\n', 1)
-            if 'CLUSTER_NAME:' in name_line:
-                cluster_name = name_line.replace('CLUSTER_NAME:', '').strip()
+            if isinstance(full_response, str) and "CLUSTER_NAME:" in full_response:
+                parts = full_response.split('\n\n', 1)
+                cluster_name = parts[0].replace("CLUSTER_NAME:", "").strip()
+                description = parts[1].strip() if len(parts) > 1 else "No description generated."
             else:
-                # If format not followed, use the first line as name
-                cluster_name = name_line.strip()
-        except ValueError:
-            # If splitting fails, use the whole response as description
-            # and generate a generic name
+                # If CLUSTER_NAME is not present, use first line as name and rest as description
+                lines = full_response.strip().split('\n', 1)
+                cluster_name = lines[0].strip()
+                description = lines[1].strip() if len(lines) > 1 else "No description provided."
+        except Exception:
+            # Fallback if anything fails in parsing
             description = full_response
-            top_feature = feature_importance.iloc[0]['feature']
-            top_direction = feature_direction[feature_direction['feature'] == top_feature]['direction'].values[0]
-            cluster_name = f"{top_direction} {top_feature} Cluster"
-        
+            try:
+                top_feature = feature_importance.iloc[0]['feature']
+                top_direction = feature_direction[feature_direction['feature'] == top_feature]['direction'].values[0]
+                cluster_name = f"{top_direction} {top_feature} Cluster"
+            except Exception:
+                cluster_name = "Unnamed Cluster"
         return {
             'name': cluster_name,
             'description': description

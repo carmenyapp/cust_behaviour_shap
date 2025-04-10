@@ -294,10 +294,21 @@ def generate_ai_description(cluster_descriptions):
 
 def generate_ai_message(cluster_description, user_name, user_case):
     prompt = f"""
-    Generate a personalized marketing message based on the following:
-
-    Customer Characteristics and Marketing Suggestions: {cluster_description}
+    You are tasked with generating a meaningful, actionable, and insightful message for business stakeholders. Based on the following inputs:
+    Customer Characteristics: {cluster_description}
     User Requirement: {user_case}
+
+    Generate a concise message that:
+    - Combines the cluster's unique characteristics from the description with the specific use case provided by the user.
+    - Provides relevant insights and actionable recommendations based on the cluster's behaviors, preferences, and needs in relation to the user case.
+    - Focuses on helping stakeholders understand how to tailor marketing, sales, or engagement strategies effectively for this customer segment.
+    
+    The message should:
+    - Be clear, concise, and professional.
+    - Avoid jargon; ensure it's understandable for business decision-makers.
+    - Be less than 300 words.
+    
+    Ensure that the generated message captures the essence of both the cluster's behaviors and the user's needs, making it easy for stakeholders to act on.
     """
     if user_name:
         prompt = f"Generate a personalized message for {user_name} based on the following:\n\n" + prompt
@@ -320,17 +331,17 @@ def ai_message_generator(cluster_descriptions):
     st.subheader("AI Message Generator")
     selected_cluster_ai = st.selectbox("Select a Cluster for Message Generation:", list(sorted(cluster_descriptions.keys())))
     user_name_ai = st.text_input("User Name (Optional):")
-    user_case_ai = st.text_area("Enter your requirement for the marketing message:")
+    user_case_ai = st.text_area("Enter your requirement for the message:")
 
-    if st.button("Generate Marketing Message"):
+    if st.button("Generate Message"):
         if not user_case_ai:
             st.error("Please enter your requirement for the message.")
         else:
             cluster_description_ai = cluster_descriptions[selected_cluster_ai]
-            with st.spinner("Generating marketing message..."):
-                marketing_text = generate_ai_message(cluster_description_ai, user_name_ai, user_case_ai)
-                st.markdown(f"### Generated Message for {selected_cluster_ai}:")
-                st.write(marketing_text)
+            with st.spinner("Generating response..."):
+                generated_text = generate_ai_message(cluster_description_ai, user_name_ai, user_case_ai)
+                st.markdown(f"### Generated Message:")
+                st.write(generated_text)
 
 
 #  my code start here

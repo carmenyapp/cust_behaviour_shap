@@ -214,7 +214,6 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
         Generate a concise, professional description of the cluster. 
         
         **Requirements:**
-        - Length: STRICTLY less than 250 words and maximum 5 sentences. Do not exceed this limit under any circumstances.
         - Style: Business-friendly and insightful
         - Must explain:
           - What defines this cluster (key traits)

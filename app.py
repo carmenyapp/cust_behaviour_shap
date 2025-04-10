@@ -225,6 +225,7 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
         ### FORMAT REQUIREMENTS:
         Return your response **exactly** as follows:
         Do not include any extra explanation or commentary.
+        Do NOT wrap your response in triple backticks (```). Respond in plain text only.
         """
         
         # Generate AI Description

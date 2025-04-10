@@ -214,11 +214,11 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
         Generate a concise, professional description of the cluster. 
         
         **Requirements:**
-        - Length: STRICTLY less than 250 words. Do not exceed this limit under any circumstances.
+        - Length: STRICTLY less than 250 words and maximum 5 sentences. Do not exceed this limit under any circumstances.
         - Style: Business-friendly and insightful
         - Must explain:
           - What defines this cluster (key traits)
-          - How top features shape behavior (direction & impact)
+          - How top features shape behavior (impact)
           - Business insights or strategies for engagement
         - Format: Start right after the name on a new paragraph.
         

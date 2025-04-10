@@ -301,7 +301,6 @@ def generate_ai_message(cluster_description, user_name, user_case):
     Generate a concise message that:
     - Combines the cluster's unique characteristics from the description with the specific use case provided by the user.
     - Provides relevant insights and actionable recommendations based on the cluster's behaviors, preferences, and needs in relation to the user case.
-    - Focuses on helping stakeholders understand how to tailor marketing, sales, or engagement strategies effectively for this customer segment.
     
     The message should:
     - Be clear, concise, and professional.

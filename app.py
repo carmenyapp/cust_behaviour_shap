@@ -243,7 +243,6 @@ def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_i
     except Exception as e:
         return f"Error generating description for cluster {cluster_id}: {str(e)}"
 
-@st.cache
 def generate_clusters_description(shap_results):
     cluster_info = {}
     for cluster_id, result in shap_results.items():

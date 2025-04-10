@@ -348,7 +348,7 @@ if st.button("Segment and Analyze"):
     
 # Display Results if Available
 if st.session_state.get('cluster_descriptions_ai'):
-    sorted_cluster_ids = sorted(st.session_state['cluster_description_ai'].keys())
+    sorted_cluster_ids = sorted(st.session_state['cluster_descriptions_ai'].keys())
     # Display Cluster Descriptions
     for cluster_id in sorted_cluster_ids:
         info = st.session_state['cluster_descriptions_ai'][cluster_id]

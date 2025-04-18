@@ -71,7 +71,7 @@ def determine_optimal_clusters(df, categorical_cols):
     with st.spinner("Determining optimal number of clusters..."):
         for n_clusters in range(3, 7):
             df_temp = apply_kprototypes(df.copy(), categorical_cols, n_clusters)
-            
+            st.text("test")
             # Ensure there's more than one cluster for silhouette score
             if len(df_temp['Cluster'].unique()) > 1:
                 # Separate numerical and categorical data for silhouette score
@@ -83,6 +83,7 @@ def determine_optimal_clusters(df, categorical_cols):
                 else:
                     st.warning(f"No numerical data to calculate silhouette score for {n_clusters} clusters.")
             else:
+                st.text("test2")
                 silhouette_scores[n_clusters] = -1  # Indicate invalid
 
     if silhouette_scores:

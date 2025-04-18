@@ -352,7 +352,7 @@ manual_n_clusterd = st.checkbox("Manually determine the number of clusters (with
 if manual_n_clusterd:
     st.session_state['n_clusters_value'] = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
     st.session_state['n_clusters_determined'] = True
-elif not manual_n_clusterd and not st.session_state['n_clusters_determined']:
+elif not st.session_state.get('n_clusters_determined', False):
     best_n_clusters = determine_optimal_clusters(df, categorical_cols)
     st.session_state['n_clusters_value'] = best_n_clusters
     st.session_state['n_clusters_determined'] = True

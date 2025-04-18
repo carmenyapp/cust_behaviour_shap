@@ -350,18 +350,17 @@ initialize_session_state()
 df, categorical_cols = load_data()
 st.title("AI Message Generation from Customer Analysis")
 
-st.subheader("Cluster Number Selection")
 manual_n_clusterd = st.checkbox("Manually determine the number of clusters (within 3-6)?")
-
-if not manual_n_clusterd and st.session_state['n_clusters_determined']:
-    best_n_clusters = determine_optimal_clusters(df, categorical_cols)
-    st.session_state['n_clusters_value'] = best_n_clusters
-    st.session_state['n_clusters_determined'] = True
-elif manual_n_clusterd:
-    st.session_state['n_clusters_determined'] = False
-    st.session_state['n_clusters_value'] = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
      
 if st.button("Segment and Analyze"):
+    if not manual_n_clusterd and st.session_state['n_clusters_determined']:
+        st.text("test")
+        best_n_clusters = determine_optimal_clusters(df, categorical_cols)
+        st.session_state['n_clusters_value'] = best_n_clusters
+        st.session_state['n_clusters_determined'] = True
+    elif manual_n_clusterd:
+        st.session_state['n_clusters_determined'] = False
+        st.session_state['n_clusters_value'] = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
     # Perform clustering & shap analysis
     (
         st.session_state['shap_results'], 

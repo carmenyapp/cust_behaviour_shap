@@ -9,6 +9,8 @@ from sklearn.metrics import f1_score, classification_report, silhouette_score
 import shap
 import json
 import matplotlib.pyplot as plt
+import os
+import joblib
 import numpy as np
 import openai
 
@@ -142,8 +144,43 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
             'y_test': y_test
         }
 
-    return shap_results, ay_test, ay_pred
+    return shap_results, ay_test, ay_pred/
 
+def try_load_preprocessed():
+    try:
+        data = joblib.load(os.path.join(MODEL_DIR, "preprocessed_data.pkl"))
+        st.success("Loaded preprocessed data from local file.")
+        return data
+    except:
+        st.warning("Preprocessed data not found. Running load_data().")
+        return load_data()
+
+def try_get_n_clusters(manual):
+    if manual:
+        return st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
+    else:
+        try:
+            best_n = joblib.load(os.path.join(MODEL_DIR, "best_n_clusters.pkl"))
+            st.success(f"Auto-selected optimal clusters: {best_n}")
+            return best_n
+        except:
+            st.warning("best_n_clusters.pkl not found. Calculating optimal clusters...")
+            return determine_optimal_clusters(df, categorical_cols)
+
+def try_load_analysis(n_clusters):
+    shap_file = os.path.join(MODEL_DIR, f"shap_results_{n_clusters}.pkl")
+    ytest_file = os.path.join(MODEL_DIR, f"y_test_{n_clusters}.pkl")
+    ypred_file = os.path.join(MODEL_DIR, f"y_pred_{n_clusters}.pkl")
+
+    if os.path.exists(shap_file) and os.path.exists(ytest_file) and os.path.exists(ypred_file):
+        shap_results = joblib.load(shap_file)
+        y_test = joblib.load(ytest_file)
+        y_pred = joblib.load(ypred_file)
+        st.success(f"Loaded SHAP and prediction results for {n_clusters} clusters.")
+        return shap_results, y_test, y_pred
+
+    return None, None, None
+    
 def cluster_descriptions_generator(shap_values, X_test, feature_names, cluster_id):
     try:
         if len(shap_values.shape) > 2:
@@ -345,26 +382,21 @@ def ai_message_generator(cluster_descriptions):
 #  my code start here
 
 initialize_session_state()
-df, categorical_cols = load_data()
+df, categorical_cols = try_load_preprocessed()
 st.title("AI Message Generation from Customer Analysis")
 
 manual_n_clusterd = st.checkbox("Manually determine the number of clusters (within 3-6)?")
-if manual_n_clusterd:
-    st.session_state['n_clusters_value'] = st.slider("Select Number of Clusters for Segmentation", min_value=3, max_value=6, value=3, step=1)
-    st.session_state['n_clusters_determined'] = True
-elif not st.session_state.get('n_clusters_determined', False):
-    best_n_clusters = determine_optimal_clusters(df, categorical_cols)
-    st.session_state['n_clusters_value'] = best_n_clusters
-    st.session_state['n_clusters_determined'] = True
-    st.write(f"Auto-selected optimal clusters: {best_n_clusters}")
-if st.button("Segment and Analyze"):
-    # Perform clustering & shap analysis
-    (
-        st.session_state['shap_results'], 
-        st.session_state.y_test, 
-        st.session_state.y_pred
-    )= perform_clustering_analysis(df, categorical_cols, st.session_state['n_clusters_value'])
+st.session_state['n_clusters_value'] = try_get_n_clusters(manual_n_clusterd)
 
+if st.button("Segment and Analyze"):
+    shap_results, y_test, y_pred = try_load_analysis(st.session_state['n_clusters_value'])
+        
+    if shap_results is None:
+        shap_results, y_test, y_pred = perform_clustering_analysis(df, categorical_cols, st.session_state['n_clusters_value'])
+    st.session_state['shap_results'] = shap_results
+    st.session_state['y_test'] = y_test
+    st.session_state['y_pred'] = y_pred
+    
     # Generate cluster descriptions
     cluster_info = generate_clusters_description(st.session_state['shap_results'])
     st.session_state['cluster_descriptions_ai'] = cluster_info

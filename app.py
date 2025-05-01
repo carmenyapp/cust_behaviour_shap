@@ -15,6 +15,7 @@ import numpy as np
 import openai
 
 openai.api_key =  st.secrets["mykey"]
+MODEL_DIR = "models"
 
 @st.cache_data
 def load_data():

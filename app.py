@@ -144,7 +144,7 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
             'y_test': y_test
         }
 
-    return shap_results, ay_test, ay_pred/
+    return shap_results, ay_test, ay_pred
 
 def try_load_preprocessed():
     try:

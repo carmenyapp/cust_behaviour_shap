@@ -331,7 +331,7 @@ def generate_ai_description(cluster_descriptions):
 
 def generate_ai_message(cluster_description, user_name, user_case):
     prompt = f"""
-    You are tasked with generating a meaningful, actionable, and insightful message for business stakeholders. Based on the following inputs:
+    You are an AI assistant helping a business generate personalized messages for customer segment. Generate a professional yet engaging message suitable for this customer profile based on the following:
     Customer Characteristics: {cluster_description}
     User Requirement: {user_case}
 
@@ -340,6 +340,7 @@ def generate_ai_message(cluster_description, user_name, user_case):
     - Provides relevant insights and actionable recommendations based on the cluster's behaviors, preferences, and needs in relation to the user case.
     
     The message should:
+    - Start with a warm and relevant greeting that addresses the segment by their cluster name (e.g., "Dear High-Value Loyal Customers,").
     - Be clear, concise, and professional.
     - Avoid jargon; ensure it's understandable for business decision-makers.
     - Be less than 300 words.

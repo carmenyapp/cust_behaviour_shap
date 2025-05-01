@@ -6,3 +6,4 @@ numpy == 1.26.4
 streamlit==1.40.2
 kmodes==0.12.2
 openai == 0.28
+joblib==1.4.2

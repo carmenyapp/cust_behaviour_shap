@@ -72,7 +72,7 @@ def initialize_session_state():
 def determine_optimal_clusters(df, categorical_cols):
     silhouette_scores = {}
     with st.spinner("Determining optimal number of clusters..."):
-        for n_clusters in range(3, 7):
+        for n_clusters in range(4, 7):
             df_temp = apply_kprototypes(df.copy(), categorical_cols, n_clusters)
             # Ensure there's more than one cluster for silhouette score
             if len(df_temp['Cluster'].unique()) > 1:

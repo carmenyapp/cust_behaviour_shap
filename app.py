@@ -434,7 +434,7 @@ if st.session_state.get('cluster_descriptions_ai'):
     if show_shap_summary:
         st.subheader("SHAP Summary Plots by Cluster")
 
-        for cluster_id, result in st.session_state['shap_results'].items():
+        for cluster_id, result in sorted(st.session_state['shap_results'].items()):
             st.markdown(f"### Cluster {cluster_id}")
         
             fig = plt.figure(figsize=(12, 8))

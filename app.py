@@ -150,10 +150,9 @@ def perform_clustering_analysis(df, categorical_cols, n_clusters_to_use):
 def try_load_preprocessed():
     try:
         data = joblib.load(os.path.join(MODEL_DIR, "preprocessed_data.pkl"))
-        st.success("Loaded preprocessed data from local file.")
+        st.success("Loaded preprocessed data.")
         return data
     except:
-        st.warning("Preprocessed data not found. Running load_data().")
         return load_data()
 
 def try_get_n_clusters(manual):
@@ -165,7 +164,7 @@ def try_get_n_clusters(manual):
             st.success(f"Auto-selected optimal clusters: {best_n}")
             return best_n
         except:
-            st.warning("best_n_clusters.pkl not found. Calculating optimal clusters...")
+            st.text("Calculating optimal clusters...")
             return determine_optimal_clusters(df, categorical_cols)
 
 def try_load_analysis(n_clusters):
